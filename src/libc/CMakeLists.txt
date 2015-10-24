@@ -1,5 +1,6 @@
 SET(LIBC_SRCS
     stdio/printf.c
+    stdio/putchar.c
     stdio/puts.c
     string/strlen.c
 )

@@ -35,15 +35,20 @@
 
 
 /*
- * Function print_string (s)
+ * Function __kiznix_print (s)
  *
  *    Print string `s' to terminal (or some kind of output).
  *
  */
-static void print_string (const char * s)
+__attribute__ ((weak)) int __kiznix_print (const char* string)
 {
-    while ( *s )
-    putchar(*s++);
+    const char* p = string;
+    for (; *p; ++p)
+    {
+        __kiznix_putc(*p);
+    }
+
+    return p - string;
 }
 
 
@@ -555,7 +560,7 @@ int printf(const char *fmt, ...)
      * Output to terminal.
      */
     if ( r > 0 )
-    print_string(outbuf);
+    __kiznix_print(outbuf);
 
     return r;
 }

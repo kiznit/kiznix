@@ -1,15 +1,13 @@
 #include <stdio.h>
 
 
-int puts(const char* string)
+int puts(const char* string) __attribute__ ((weak, alias ("__kiznix_puts")));
+
+
+
+int __kiznix_puts(const char* string)
 {
-    const char* p = string;
-    for (; *p; ++p)
-    {
-        putchar(*p);
-    }
-
-    putchar('\n');
-
-    return p - string + 1;
+    int result = __kiznix_print(string);
+    __kiznix_putc('\n');
+    return result;
 }

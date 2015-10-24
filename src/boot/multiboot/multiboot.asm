@@ -90,7 +90,7 @@ _start:
     push eax                    ; MULTIBOOT_BOOTLOADER_MAGIC
     call multiboot_main
 
-.halt
+.halt:
     cli                         ; Disable interrupts
     hlt                         ; Halt the CPU
     jmp .halt                   ; NMI can wake up CPU, go back to sleep

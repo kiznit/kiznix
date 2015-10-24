@@ -31,15 +31,12 @@ static EFI_SYSTEM_TABLE* efi;
 
 
 
-extern "C" int putchar(int i)
+extern "C" void __kiznix_putc(unsigned char c)
 {
-    CHAR16 c = (CHAR16)i;
     CHAR16 s[2] = { c, 0 };
 
     SIMPLE_TEXT_OUTPUT_INTERFACE* out = efi->ConOut;
     out->OutputString(out, s);
-
-    return c;
 }
 
 

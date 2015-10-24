@@ -29,11 +29,9 @@
 #include "console.hpp"
 
 
-extern "C" int putchar(int i)
+extern "C" void __kiznix_putc(unsigned char c)
 {
-    char c = i;
     console_putchar(c);
-    return c;
 }
 
 
@@ -44,7 +42,8 @@ extern "C" void multiboot_main(uint32_t magic, void* header)
 
     if (magic && header)
     {
-        printf("This is multiboot: %08x, %p\n", (unsigned int)magic, header);
+        puts("This is multiboot");
+        printf("    Parameters: %08x, %p\n", (unsigned int)magic, header);
     }
     else
     {
