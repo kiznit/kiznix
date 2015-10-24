@@ -1,0 +1,74 @@
+# Copyright (c) 2015, Thierry Tremblay
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
+PROJECT(KIZNIX_EFI)
+
+
+if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86")
+    SET(EFI_FILENAME "bootia32.efi")
+    SET(EFI_TARGET_FORMAT "efi-app-ia32")
+    SET(EFI_ENTRY_POINT "_efi_main")
+elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    SET(EFI_FILENAME "bootx64.efi")
+    SET(EFI_TARGET_FORMAT "efi-app-x86_64")
+    SET(EFI_ENTRY_POINT "efi_main")
+endif()
+
+
+ADD_SUBDIRECTORY(${CMAKE_SOURCE_DIR}/../../libc "${CMAKE_CURRENT_BINARY_DIR}/libc")
+
+
+SET(EFI_SRCS
+    efi.cpp
+)
+
+
+INCLUDE_DIRECTORIES(
+    SYSTEM ../../include
+    SYSTEM ${CMAKE_SOURCE_DIR}/../../libc/include
+)
+
+
+if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86")
+    INCLUDE_DIRECTORIES(../../include/boot/efi/ia32)
+elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    INCLUDE_DIRECTORIES(../../include/boot/efi/x86_64)
+endif()
+
+
+SET(CMAKE_SHARED_LINKER_FLAGS "-nostdlib -e ${EFI_ENTRY_POINT}")
+
+ADD_LIBRARY(efiboot SHARED ${EFI_SRCS})
+
+TARGET_LINK_LIBRARIES(efiboot libc)
+
+
+ADD_CUSTOM_COMMAND(
+    OUTPUT ${CMAKE_BINARY_DIR}/${EFI_FILENAME}
+    COMMAND objcopy --target=${EFI_TARGET_FORMAT} $<TARGET_FILE:efiboot> "${EFI_FILENAME}"
+    DEPENDS efiboot
+)
+
+ADD_CUSTOM_TARGET(objcopy ALL DEPENDS ${CMAKE_BINARY_DIR}/${EFI_FILENAME})
