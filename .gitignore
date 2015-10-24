@@ -2,6 +2,4 @@ bin
 build
 bochsout.txt
 bx_enh_dbg.ini
-OVMF-ia32.fd
-OVMF-x64.fd
 x

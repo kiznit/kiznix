@@ -103,11 +103,11 @@ run-qemu-64: grub-image
 
 .PHONY: run-efi-32
 run-efi-32: efi-image
-	qemu-system-i386 $(QEMUFLAGS) -bios OVMF-ia32.fd -hda fat:$(BUILDDIR)/efi-image
+	qemu-system-i386 $(QEMUFLAGS) -bios bios/OVMF-ia32.fd -hda fat:$(BUILDDIR)/efi-image
 
 .PHONY: run-efi-64
 run-efi-64: efi-image
-	qemu-system-x86_64 $(QEMUFLAGS) -bios OVMF-x64.fd -hda fat:$(BUILDDIR)/efi-image
+	qemu-system-x86_64 $(QEMUFLAGS) -bios bios/OVMF-x64.fd -hda fat:$(BUILDDIR)/efi-image
 
 .PHONY: run-bochs
 run-bochs: efi-image
@@ -115,3 +115,6 @@ run-bochs: efi-image
 
 .PHONY: run
 run: run-qemu-64
+
+.PHONY: run-efi
+run-efi: run-efi-64
