@@ -24,8 +24,10 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <boot/efi.h>
+#include "efi.hpp"
 #include <stdio.h>
+#include <malloc.h>
+
 
 static EFI_SYSTEM_TABLE* efi;
 
@@ -33,10 +35,69 @@ static EFI_SYSTEM_TABLE* efi;
 
 extern "C" void __kiznix_putc(unsigned char c)
 {
-    CHAR16 s[2] = { c, 0 };
+    CHAR16 s[3] = { c, 0, 0 };
+
+    if (c == '\n')
+    {
+        s[1] = '\r';
+    }
 
     SIMPLE_TEXT_OUTPUT_INTERFACE* out = efi->ConOut;
     out->OutputString(out, s);
+}
+
+
+
+static void add_memory(int type, uint64_t address, uint64_t length, uint64_t attributes)
+{
+    unsigned int s0 = address >> 32;
+    unsigned int s1 = address & 0xFFFFFFFF;
+    unsigned int e0 = (address + length) >> 32;
+    unsigned int e1 = (address + length) & 0xFFFFFFFF;
+
+    double size = length / (1024.0 * 1024.0);
+
+    unsigned int a0 = attributes >> 32;
+    unsigned int a1 = attributes & 0xFFFFFFFF;
+
+    printf("    %d: %08x%08x - %08x%08x (%.2f MB) - %08x%08x\n", type, s0, s1, e0, e1, size, a0, a1);
+}
+
+
+
+static void find_memory()
+{
+    UINTN mapSize = 0;
+    UINTN mapKey;
+    UINTN descriptorSize;
+    UINT32 descriptorVersion;
+
+    EFI_STATUS status = efi->BootServices->GetMemoryMap(&mapSize, 0, &mapKey, &descriptorSize, &descriptorVersion);
+    if (status != EFI_BUFFER_TOO_SMALL)
+    {
+        printf("Error: First call to GetMemoryMap() returned %d\n", (int)status);
+        return;
+    }
+
+    EFI_MEMORY_DESCRIPTOR* map = (EFI_MEMORY_DESCRIPTOR*)alloca(mapSize);
+
+    status = efi->BootServices->GetMemoryMap(&mapSize, map, &mapKey, &descriptorSize, &descriptorVersion);
+    if (EFI_ERROR(status))
+    {
+        printf("Error: Second call to GetMemoryMap() returned %d\n", (int)status);
+        return;
+    }
+
+    const EFI_MEMORY_DESCRIPTOR* entry = map;
+    const EFI_MEMORY_DESCRIPTOR* end = (EFI_MEMORY_DESCRIPTOR*)((uintptr_t)map + mapSize);
+
+    printf("\nMemory map:\n");
+
+    while (entry < end)
+    {
+        add_memory(entry->Type, entry->PhysicalStart, entry->NumberOfPages * 4096ull, entry->Attribute);
+        entry = (EFI_MEMORY_DESCRIPTOR*)((uintptr_t)entry + descriptorSize);
+    }
 }
 
 
@@ -47,7 +108,9 @@ extern "C" EFIAPI EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE* system
 
     efi = systemTable;
 
-    printf("Kiznix EFI Application (efi_main) - %d bits.", (int)sizeof(void*)*8);
+    printf("Kiznix EFI Application (efi_main) - %d bits.\n", (int)sizeof(void*)*8);
+
+    find_memory();
 
     // Wait for a key press
     UINTN index;

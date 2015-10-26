@@ -24,20 +24,15 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _KIZNIX_INCLUDED_EFI_H
-#define _KIZNIX_INCLUDED_EFI_H
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
+#ifndef _BOOT_EFI_HPP
+#define _BOOT_EFI_HPP
 
 #define GNU_EFI_USE_MS_ABI
 
+extern "C"
+{
 #include "efi/efi.h"
-
-#if defined(__cplusplus)
 }
-#endif
+
 
 #endif
-

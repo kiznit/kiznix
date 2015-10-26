@@ -95,11 +95,11 @@ $(BUILDDIR)/x86/multiboot/Makefile:
 
 .PHONY: run-qemu-32
 run-qemu-32: grub-image
-	qemu-system-i386 $(QEMU_FLAGS) -cdrom $(BINDIR)/kiznix-grub-image.iso
+	qemu-system-i386 $(QEMUFLAGS) -cdrom $(BINDIR)/kiznix-grub-image.iso
 
 .PHONY: run-qemu-64
 run-qemu-64: grub-image
-	qemu-system-x86_64 $(QEMU_FLAGS) -cdrom $(BINDIR)/kiznix-grub-image.iso
+	qemu-system-x86_64 $(QEMUFLAGS) -cdrom $(BINDIR)/kiznix-grub-image.iso
 
 .PHONY: run-efi-32
 run-efi-32: efi-image

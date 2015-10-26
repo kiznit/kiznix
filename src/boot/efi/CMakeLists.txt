@@ -46,15 +46,14 @@ SET(EFI_SRCS
 
 
 INCLUDE_DIRECTORIES(
-    SYSTEM ../../include
     SYSTEM ${CMAKE_SOURCE_DIR}/../../libc/include
 )
 
 
 if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86")
-    INCLUDE_DIRECTORIES(../../include/boot/efi/ia32)
+    INCLUDE_DIRECTORIES(efi/ia32)
 elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-    INCLUDE_DIRECTORIES(../../include/boot/efi/x86_64)
+    INCLUDE_DIRECTORIES(efi/x86_64)
 endif()
 
 
