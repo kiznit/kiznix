@@ -24,7 +24,7 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "efi.hpp"
+#include "efi/efi.h"
 #include <stdio.h>
 #include <malloc.h>
 
