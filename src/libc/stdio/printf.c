@@ -40,7 +40,7 @@
  *    Print string `s' to terminal (or some kind of output).
  *
  */
-int __kiznix_print (const char* string)
+WEAK_FUNCTION int __kiznix_print(const char* string)
 {
     const char* p = string;
     for (; *p; ++p)
