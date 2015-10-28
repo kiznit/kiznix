@@ -1,8 +1,9 @@
 #include <stdio.h>
+#include <libc-internals.h>
 
 
 
-WEAK_FUNCTION int puts(const char* string)
+int puts(const char* string)
 {
     int result = __kiznix_print(string);
     __kiznix_putc('\n');
