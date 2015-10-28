@@ -57,9 +57,9 @@ elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
 endif()
 
 
-SET(CMAKE_SHARED_LINKER_FLAGS "-nostdlib -e ${EFI_ENTRY_POINT} -Wl,--subsystem,10")
+SET(CMAKE_EXE_LINKER_FLAGS "-shared -nostdlib -e ${EFI_ENTRY_POINT} -Wl,--subsystem,10")
 
-ADD_LIBRARY(efiboot SHARED ${EFI_SRCS})
+ADD_EXECUTABLE(efiboot ${EFI_SRCS})
 
 TARGET_LINK_LIBRARIES(efiboot libc)
 
