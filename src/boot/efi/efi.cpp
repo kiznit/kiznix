@@ -42,8 +42,8 @@ extern "C" void __kiznix_putc(unsigned char c)
         s[1] = '\r';
     }
 
-    SIMPLE_TEXT_OUTPUT_INTERFACE* out = efi->ConOut;
-    out->OutputString(out, s);
+    SIMPLE_TEXT_OUTPUT_INTERFACE* self = efi->ConOut;
+    self->OutputString(self, s);
 }
 
 
@@ -61,6 +61,43 @@ static void add_memory(int type, uint64_t address, uint64_t length, uint64_t att
     unsigned int a1 = attributes & 0xFFFFFFFF;
 
     printf("    %d: %08x%08x - %08x%08x (%.2f MB) - %08x%08x\n", type, s0, s1, e0, e1, size, a0, a1);
+}
+
+
+
+
+static void console_init()
+{
+    SIMPLE_TEXT_OUTPUT_INTERFACE* self = efi->ConOut;
+
+    UINTN mode = 0;
+    UINTN width = 80;
+    UINTN height = 25;
+
+    for (UINTN m = 0; ; ++m)
+    {
+        UINTN w, h;
+        EFI_STATUS status = self->QueryMode(self, m, &w, &h);
+        if (EFI_ERROR(status))
+        {
+            if (m > 1)
+                break;
+        }
+        else
+        {
+            if (w * h > width * height)
+            {
+                mode = m;
+                width = w;
+                height = h;
+            }
+        }
+    }
+
+    if (mode > 0)
+    {
+        self->SetMode(self, mode);
+    }
 }
 
 
@@ -107,6 +144,8 @@ extern "C" EFIAPI EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE* system
     (void)image;
 
     efi = systemTable;
+
+    console_init();
 
     printf("Kiznix EFI Application (efi_main) - %d bits.\n", (int)sizeof(void*)*8);
 
