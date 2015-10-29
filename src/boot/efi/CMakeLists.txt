@@ -57,7 +57,7 @@ elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
 endif()
 
 
-SET(CMAKE_EXE_LINKER_FLAGS "-shared -nostdlib -e ${EFI_ENTRY_POINT} -Wl,--subsystem,10")
+SET(CMAKE_EXE_LINKER_FLAGS "-shared -nostdlib -e ${EFI_ENTRY_POINT} -Wl,--subsystem,10 -Wl,--image-base,0x100000")
 
 ADD_EXECUTABLE(efiboot ${EFI_SRCS})
 
