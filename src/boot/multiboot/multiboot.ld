@@ -30,6 +30,8 @@ ENTRY(_start)
 
 SECTIONS
 {
+    . = 1M;
+
     .text ALIGN(4K) :
     {
         *(.multiboot)   /* Make sure the multiboot headers are at the beginning of the image */
