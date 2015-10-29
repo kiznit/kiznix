@@ -26,6 +26,8 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <cpuid.h>
+
 #include "console.hpp"
 
 #include "multiboot.h"
@@ -45,6 +47,31 @@ struct multiboot2_info
     uint32_t total_size;
     uint32_t reserved;
 };
+
+
+
+// i686 = P6 (Pentium Pro)
+// Reference:
+//  https://en.m.wikipedia.org/wiki/P6_(microarchitecture)
+static bool verify_cpu()
+{
+    unsigned int maxLevel = __get_cpuid_max(0, NULL);
+    if (maxLevel == 0)
+    {
+        printf("Unable to identify CPU (CPUID instruction not supported)\n");
+        return false;
+    }
+
+    unsigned int eax, ebx, ecx, edx;
+    if (!__get_cpuid(1, &eax, &ebx, &ecx, &edx) || !(edx & bit_SSE2))
+    {
+        printf("Streaming SIMD Extensions 2 (SSE2) not detected\n");
+        return false;
+    }
+
+    return true;
+}
+
 
 
 
@@ -139,7 +166,11 @@ extern "C" void multiboot_main(unsigned int magic, void* mbi)
 {
     console_init();
 
-    if (magic == MULTIBOOT_BOOTLOADER_MAGIC && mbi)
+    if (!verify_cpu())
+    {
+        printf("CPU doesn't support required features, aborting\n");
+    }
+    else if (magic == MULTIBOOT_BOOTLOADER_MAGIC && mbi)
     {
         printf("This is multiboot 1\n");
         process_multiboot_info((multiboot_info*)mbi);
@@ -151,6 +182,6 @@ extern "C" void multiboot_main(unsigned int magic, void* mbi)
     }
     else
     {
-        printf("Kiznix boot error: no multiboot information!");
+        printf("Kiznix boot error: no multiboot information!\n");
     }
 }

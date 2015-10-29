@@ -47,6 +47,11 @@ INCLUDE_DIRECTORIES(
 )
 
 
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mno-mmx -mno-sse -mno-sse2")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mno-mmx -mno-sse -mno-sse2")
+
+
+
 # dummy.c is used to create a dependency on multiboot.ld
 ADD_CUSTOM_COMMAND(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dummy.c

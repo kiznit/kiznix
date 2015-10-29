@@ -89,11 +89,13 @@ _start:
     push ebx                    ; multiboot_header*
     push eax                    ; MULTIBOOT_BOOTLOADER_MAGIC
     call multiboot_main
+    add  esp, 8                 ; Pop arguments to multiboot_main()
 
 .halt:
     cli                         ; Disable interrupts
     hlt                         ; Halt the CPU
     jmp .halt                   ; NMI can wake up CPU, go back to sleep
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
