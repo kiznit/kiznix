@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 void __kiznix_putc(unsigned char c);
-WEAK_FUNCTION int __kiznix_print(const char* string);
+int __kiznix_print(const char* string);
 
 
 #ifdef __cplusplus
