@@ -47,8 +47,10 @@ INCLUDE_DIRECTORIES(
 )
 
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mno-mmx -mno-sse -mno-sse2")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mno-mmx -mno-sse -mno-sse2")
+
+# Grub is compiled with -march=i386 by default. Let's do the same.
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=i386")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=i386")
 
 
 
