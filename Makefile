@@ -47,7 +47,7 @@ clean:
 ###############################################################################
 
 .PHONY: efi-image
-efi-image: efi-boot
+efi-image: efi-boot kernel32 kernel64
 	rm -rf $(BUILDDIR)/efi-image
 	mkdir -p $(BUILDDIR)/efi-image/efi/boot
 	cp $(BUILDDIR)/x86/efi/bootia32.efi $(BUILDDIR)/efi-image/efi/boot
@@ -72,7 +72,7 @@ $(BUILDDIR)/x86_64/efi/Makefile:
 ###############################################################################
 
 .PHONY: grub-image
-grub-image: multiboot
+grub-image: multiboot kernel32 kernel64
 	rm -rf $(BUILDDIR)/grub-image
 	mkdir -p $(BUILDDIR)/grub-image/boot/grub
 	cp $(BUILDDIR)/x86/multiboot/multiboot $(BUILDDIR)/grub-image/boot/kiznix_multiboot.elf
@@ -87,6 +87,29 @@ multiboot: $(BUILDDIR)/x86/multiboot/Makefile
 $(BUILDDIR)/x86/multiboot/Makefile:
 	mkdir -p $(dir $@)
 	cd $(dir $@); cmake -DCMAKE_TOOLCHAIN_FILE=$(ROOTDIR)/cmake/toolchain-x86-kiznix.cmake $(SRCDIR)/boot/multiboot
+
+
+
+###############################################################################
+# Kernels
+###############################################################################
+
+.PHONY: kernel32 kernel64
+
+kernel32: $(BUILDDIR)/x86/kernel/Makefile
+	$(MAKE) -C $(BUILDDIR)/x86/kernel
+
+kernel64: $(BUILDDIR)/x86_64/kernel/Makefile
+	$(MAKE) -C $(BUILDDIR)/x86_64/kernel
+
+$(BUILDDIR)/x86/kernel/Makefile:
+	mkdir -p $(dir $@)
+	cd $(dir $@); cmake -DCMAKE_TOOLCHAIN_FILE=$(ROOTDIR)/cmake/toolchain-x86-kiznix.cmake $(SRCDIR)/kernel
+
+$(BUILDDIR)/x86_64/kernel/Makefile:
+	mkdir -p $(dir $@)
+	cd $(dir $@); cmake -DCMAKE_TOOLCHAIN_FILE=$(ROOTDIR)/cmake/toolchain-x86_64-kiznix.cmake $(SRCDIR)/kernel
+
 
 
 ###############################################################################
