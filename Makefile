@@ -77,6 +77,9 @@ bios-image: multiboot kernel32 kernel64
 	mkdir -p $(BUILDDIR)/bios-image/boot/grub
 	cp $(BUILDDIR)/x86/multiboot/multiboot $(BUILDDIR)/bios-image/boot/kiznix_multiboot.elf
 	cp $(SRCDIR)/iso/grub.cfg $(BUILDDIR)/bios-image/boot/grub/grub.cfg
+	mkdir -p $(BUILDDIR)/bios-image/kiznix
+	cp $(BUILDDIR)/x86/kernel/kernel $(BUILDDIR)/bios-image/kiznix/kernel_x86.elf
+	cp $(BUILDDIR)/x86_64/kernel/kernel $(BUILDDIR)/bios-image/kiznix/kernel_x86_64.elf
 	mkdir -p $(BINDIR)
 	grub-mkrescue -o $(BINDIR)/kiznix-bios.iso $(BUILDDIR)/bios-image
 

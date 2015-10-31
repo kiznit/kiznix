@@ -40,14 +40,32 @@ extern "C" void __kiznix_putc(unsigned char c)
 }
 
 
+// Multiboot don't define all the structures we need. We do.
 
-// Multiboot 2 doesn't define a structure for the boot information header. We do.
+struct multiboot_module
+{
+    uint32_t mod_start;
+    uint32_t mod_end;
+    uint32_t string;
+    uint32_t reserved;
+};
+
+
 struct multiboot2_info
 {
     uint32_t total_size;
     uint32_t reserved;
 };
 
+
+
+struct multiboot2_module
+{
+    multiboot2_header_tag tag;
+    uint32_t mod_start;
+    uint32_t mod_end;
+    char     string[];
+};
 
 
 // i686 = P6 (Pentium Pro)
@@ -111,6 +129,19 @@ static void process_multiboot_info(multiboot_info const * const mbi)
         add_memory(MULTIBOOT_MEMORY_AVAILABLE, 0, mbi->mem_lower * 1024);
         add_memory(MULTIBOOT_MEMORY_AVAILABLE, 1024*1024, mbi->mem_upper * 1024);
     }
+
+    if (mbi->flags & MULTIBOOT_INFO_MODS)
+    {
+        printf("\nModules:\n");
+
+        const multiboot_module* modules = (multiboot_module*)mbi->mods_addr;
+
+        for (uint32_t i = 0; i != mbi->mods_count; ++i)
+        {
+            const multiboot_module* module = &modules[i];
+            printf("    %u: %08x - %08x (%d bytes) - \"%s\"\n", i, module->mod_start, module->mod_end, module->mod_end - module->mod_start, module->string);
+        }
+    }
 }
 
 
@@ -132,6 +163,11 @@ static void process_multiboot_info(multiboot2_info const * const mbi)
 
         case MULTIBOOT2_TAG_TYPE_MMAP:
             mmap = (multiboot2_tag_mmap*)tag;
+            break;
+
+        case MULTIBOOT2_TAG_TYPE_MODULE:
+            const multiboot2_module* module = (multiboot2_module*)tag;
+            printf("    module: %08x - %08x (%d bytes) - \"%s\"\n", module->mod_start, module->mod_end, module->mod_end - module->mod_start, module->string);
             break;
         }
     }

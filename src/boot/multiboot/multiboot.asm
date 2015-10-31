@@ -49,22 +49,29 @@ MULTIBOOT2_HEADER_LENGTH        equ multiboot2_header_end - multiboot2_header
 MULTIBOOT2_HEADER_CHECKSUM      equ -(MULTIBOOT2_HEADER_MAGIC + MULTIBOOT2_HEADER_ARCHITECTURE + MULTIBOOT2_HEADER_LENGTH)
 
 
-align 16
+align 16, db 0
 multiboot2_header:
     dd  MULTIBOOT2_HEADER_MAGIC
     dd  MULTIBOOT2_HEADER_ARCHITECTURE
     dd  MULTIBOOT2_HEADER_LENGTH
     dd  MULTIBOOT2_HEADER_CHECKSUM & 0xFFFFFFFF
 
+align 8, db 0
+    dw  3       ; tag entry address
+    dw  1       ; flags = optional
+    dd  12      ; size of tag
+    dd  _start  ; entry_addr
+
+align 8, db 0
     dw  0       ; tag end
-    dw  0
-    dd  8
+    dw  0       ; flags
+    dd  8       ; size of tagq
 
 multiboot2_header_end:
 
 
 
-align 16
+align 16, db 0
 multiboot_header:
     dd  MULTIBOOT_HEADER_MAGIC
     dd  MULTIBOOT_HEADER_FLAGS
