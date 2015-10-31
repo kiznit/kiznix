@@ -33,7 +33,7 @@ QEMUFLAGS = -m 8G
 
 
 .PHONY: all
-all: efi-image grub-image
+all: bios-image efi-image
 
 
 .PHONY: clean
@@ -71,14 +71,14 @@ $(BUILDDIR)/x86_64/efi/Makefile:
 # Multiboot
 ###############################################################################
 
-.PHONY: grub-image
-grub-image: multiboot kernel32 kernel64
-	rm -rf $(BUILDDIR)/grub-image
-	mkdir -p $(BUILDDIR)/grub-image/boot/grub
-	cp $(BUILDDIR)/x86/multiboot/multiboot $(BUILDDIR)/grub-image/boot/kiznix_multiboot.elf
-	cp $(SRCDIR)/iso/grub.cfg $(BUILDDIR)/grub-image/boot/grub/grub.cfg
+.PHONY: bios-image
+bios-image: multiboot kernel32 kernel64
+	rm -rf $(BUILDDIR)/bios-image
+	mkdir -p $(BUILDDIR)/bios-image/boot/grub
+	cp $(BUILDDIR)/x86/multiboot/multiboot $(BUILDDIR)/bios-image/boot/kiznix_multiboot.elf
+	cp $(SRCDIR)/iso/grub.cfg $(BUILDDIR)/bios-image/boot/grub/grub.cfg
 	mkdir -p $(BINDIR)
-	grub-mkrescue -o $(BINDIR)/kiznix-grub-image.iso $(BUILDDIR)/grub-image
+	grub-mkrescue -o $(BINDIR)/kiznix-bios.iso $(BUILDDIR)/bios-image
 
 .PHONY: multiboot
 multiboot: $(BUILDDIR)/x86/multiboot/Makefile
@@ -116,13 +116,13 @@ $(BUILDDIR)/x86_64/kernel/Makefile:
 # Run targets
 ###############################################################################
 
-.PHONY: run-qemu-32
-run-qemu-32: grub-image
-	qemu-system-i386 $(QEMUFLAGS) -cdrom $(BINDIR)/kiznix-grub-image.iso
+.PHONY: run-bios-32
+run-bios-32: bios-image
+	qemu-system-i386 $(QEMUFLAGS) -cdrom $(BINDIR)/kiznix-bios.iso
 
-.PHONY: run-qemu-64
-run-qemu-64: grub-image
-	qemu-system-x86_64 $(QEMUFLAGS) -cdrom $(BINDIR)/kiznix-grub-image.iso
+.PHONY: run-bios-64
+run-bios-64: bios-image
+	qemu-system-x86_64 $(QEMUFLAGS) -cdrom $(BINDIR)/kiznix-bios.iso
 
 .PHONY: run-efi-32
 run-efi-32: efi-image
@@ -136,8 +136,11 @@ run-efi-64: efi-image
 run-bochs: efi-image
 	bochs -q
 
-.PHONY: run
-run: run-qemu-64
+.PHONY: run-bios
+run-bios: run-bios-64
 
 .PHONY: run-efi
 run-efi: run-efi-64
+
+.PHONY: run
+run: run-bios
