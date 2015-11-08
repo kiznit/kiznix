@@ -24,62 +24,63 @@
 
 ROOTDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
-SRCDIR = $(ROOTDIR)/src
-BUILDDIR = build
-BINDIR = bin
-
-CMAKE = cmake
-QEMUFLAGS = -m 8G
+SRCDIR ?= $(ROOTDIR)/src
+BUILDDIR ?= $(abspath build)
+BINDIR ?= $(abspath bin)
 
 
 .PHONY: all
-all: bios-image efi-image
-
+all:
+	@echo "Hello all"
 
 .PHONY: clean
 clean:
-	rm -rf $(BINDIR)
-	rm -rf $(BUILDDIR)
+	$(RM) -r $(BUILDDIR)
 
 
 ###############################################################################
-# EFI
+# Boot loaders
 ###############################################################################
 
-.PHONY: efi-image
-efi-image: efi-boot kernel32 kernel64
-	rm -rf $(BUILDDIR)/efi-image
-	mkdir -p $(BUILDDIR)/efi-image/efi/boot
-	cp $(BUILDDIR)/x86/efi/bootia32.efi $(BUILDDIR)/efi-image/efi/boot
-	cp $(BUILDDIR)/x86_64/efi/bootx64.efi $(BUILDDIR)/efi-image/efi/boot
+.PHONY: efi_ia32
+efi_ia32:
+	$(MAKE) TARGET_ARCH=ia32 BUILDDIR=$(BUILDDIR)/ia32/efi -C $(SRCDIR)/boot/efi
 
-.PHONY: efi-boot
-efi-boot: $(BUILDDIR)/x86/efi/Makefile $(BUILDDIR)/x86_64/efi/Makefile
-	$(MAKE) -C $(BUILDDIR)/x86/efi
-	$(MAKE) -C $(BUILDDIR)/x86_64/efi
+.PHONY: efi_x86_64
+efi_x86_64:
+	$(MAKE) TARGET_ARCH=x86_64 BUILDDIR=$(BUILDDIR)/x86_64/efi -C $(SRCDIR)/boot/efi
 
-$(BUILDDIR)/x86/efi/Makefile:
-	mkdir -p $(dir $@)
-	cd $(dir $@); cmake -DCMAKE_TOOLCHAIN_FILE=$(ROOTDIR)/cmake/toolchain-x86-efi.cmake $(SRCDIR)/boot/efi
-
-$(BUILDDIR)/x86_64/efi/Makefile:
-	mkdir -p $(dir $@)
-	cd $(dir $@); cmake -DCMAKE_TOOLCHAIN_FILE=$(ROOTDIR)/cmake/toolchain-x86_64-efi.cmake $(SRCDIR)/boot/efi
+.PHONY: multiboot_ia32
+multiboot_ia32:
+	$(MAKE) TARGET_ARCH=ia32 BUILDDIR=$(BUILDDIR)/ia32/multiboot -C $(SRCDIR)/boot/multiboot
 
 
 ###############################################################################
-# Multiboot
+# Kernels
+###############################################################################
+
+.PHONY: kernel_ia32
+kernel_ia32:
+	$(MAKE) TARGET_ARCH=ia32 BUILDDIR=$(BUILDDIR)/ia32/kernel -C $(SRCDIR)/kernel
+
+.PHONY: kernel_x86_64
+kernel_x86_64:
+	$(MAKE) TARGET_ARCH=x86_64 BUILDDIR=$(BUILDDIR)/x86_64/kernel -C $(SRCDIR)/kernel
+
+
+###############################################################################
+# BIOS image
 ###############################################################################
 
 .PHONY: bios-image
-bios-image: multiboot kernel32 kernel64
-	rm -rf $(BUILDDIR)/bios-image
+bios-image: multiboot_ia32 kernel_ia32 kernel_x86_64
+	$(RM) -r $(BUILDDIR)/bios-image
 	mkdir -p $(BUILDDIR)/bios-image/boot/grub
-	cp $(BUILDDIR)/x86/multiboot/multiboot $(BUILDDIR)/bios-image/boot/kiznix_multiboot.elf
+	cp $(BUILDDIR)/ia32/multiboot/bin/multiboot $(BUILDDIR)/bios-image/boot/kiznix_multiboot
 	cp $(SRCDIR)/iso/grub.cfg $(BUILDDIR)/bios-image/boot/grub/grub.cfg
 	mkdir -p $(BUILDDIR)/bios-image/kiznix
-	cp $(BUILDDIR)/x86/kernel/kernel $(BUILDDIR)/bios-image/kiznix/kernel_x86.elf
-	cp $(BUILDDIR)/x86_64/kernel/kernel $(BUILDDIR)/bios-image/kiznix/kernel_x86_64.elf
+	cp $(BUILDDIR)/ia32/kernel/bin/kernel $(BUILDDIR)/bios-image/kiznix/kernel_ia32
+	cp $(BUILDDIR)/x86_64/kernel/bin/kernel $(BUILDDIR)/bios-image/kiznix/kernel_x86_64
 	mkdir -p $(BINDIR)
 	grub-mkrescue -o $(BINDIR)/kiznix-bios.iso $(BUILDDIR)/bios-image
 
@@ -94,24 +95,18 @@ $(BUILDDIR)/x86/multiboot/Makefile:
 
 
 ###############################################################################
-# Kernels
+# EFI image
 ###############################################################################
 
-.PHONY: kernel32 kernel64
-
-kernel32: $(BUILDDIR)/x86/kernel/Makefile
-	$(MAKE) -C $(BUILDDIR)/x86/kernel
-
-kernel64: $(BUILDDIR)/x86_64/kernel/Makefile
-	$(MAKE) -C $(BUILDDIR)/x86_64/kernel
-
-$(BUILDDIR)/x86/kernel/Makefile:
-	mkdir -p $(dir $@)
-	cd $(dir $@); cmake -DCMAKE_TOOLCHAIN_FILE=$(ROOTDIR)/cmake/toolchain-x86-kiznix.cmake $(SRCDIR)/kernel
-
-$(BUILDDIR)/x86_64/kernel/Makefile:
-	mkdir -p $(dir $@)
-	cd $(dir $@); cmake -DCMAKE_TOOLCHAIN_FILE=$(ROOTDIR)/cmake/toolchain-x86_64-kiznix.cmake $(SRCDIR)/kernel
+.PHONY: efi-image
+efi-image: efi_ia32 efi_x86_64 kernel_ia32 kernel_x86_64
+	$(RM) -r $(BUILDDIR)/efi-image
+	mkdir -p $(BUILDDIR)/efi-image/efi/boot
+	cp $(BUILDDIR)/ia32/efi/bin/bootia32.efi $(BUILDDIR)/efi-image/efi/boot
+	cp $(BUILDDIR)/x86_64/efi/bin/bootx64.efi $(BUILDDIR)/efi-image/efi/boot
+	mkdir -p $(BUILDDIR)/efi-image/kiznix
+	cp $(BUILDDIR)/ia32/kernel/bin/kernel $(BUILDDIR)/efi-image/kiznix/kernel_ia32
+	cp $(BUILDDIR)/x86_64/kernel/bin/kernel $(BUILDDIR)/efi-image/kiznix/kernel_x86_64
 
 
 
@@ -136,7 +131,7 @@ run-efi-64: efi-image
 	qemu-system-x86_64 $(QEMUFLAGS) -bios bios/OVMF-x64.fd -hda fat:$(BUILDDIR)/efi-image
 
 .PHONY: run-bochs
-run-bochs: efi-image
+run-bochs: bios-image
 	bochs -q
 
 .PHONY: run-bios

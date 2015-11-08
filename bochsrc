@@ -4,7 +4,7 @@ megs: 128
 #
 mouse: enabled=1
 #
-ata0-master: type=cdrom, path=./bin/kiznix-grub-image.iso, status=inserted
+ata0-master: type=cdrom, path=./bin/kiznix-bios.iso, status=inserted
 #
 log: bochsout.txt
 #

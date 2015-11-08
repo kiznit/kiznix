@@ -46,7 +46,7 @@ struct multiboot_module
 {
     uint32_t mod_start;
     uint32_t mod_end;
-    uint32_t string;
+    const char* string;
     uint32_t reserved;
 };
 
@@ -139,7 +139,7 @@ static void process_multiboot_info(multiboot_info const * const mbi)
         for (uint32_t i = 0; i != mbi->mods_count; ++i)
         {
             const multiboot_module* module = &modules[i];
-            printf("    %u: %08x - %08x (%d bytes) - \"%s\"\n", i, module->mod_start, module->mod_end, module->mod_end - module->mod_start, module->string);
+            printf("    %lu: %08lx - %08lx (%ld bytes) - \"%s\"\n", i, module->mod_start, module->mod_end, module->mod_end - module->mod_start, module->string);
         }
     }
 }
@@ -167,7 +167,7 @@ static void process_multiboot_info(multiboot2_info const * const mbi)
 
         case MULTIBOOT2_TAG_TYPE_MODULE:
             const multiboot2_module* module = (multiboot2_module*)tag;
-            printf("    module: %08x - %08x (%d bytes) - \"%s\"\n", module->mod_start, module->mod_end, module->mod_end - module->mod_start, module->string);
+            printf("    module: %08lx - %08lx (%ld bytes) - \"%s\"\n", module->mod_start, module->mod_end, module->mod_end - module->mod_start, module->string);
             break;
         }
     }

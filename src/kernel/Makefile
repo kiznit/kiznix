@@ -22,42 +22,45 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
-PROJECT(KIZNIX_KERNEL)
+TARGET_ARCH ?= x86_64
 
-ADD_SUBDIRECTORY(${CMAKE_SOURCE_DIR}/../libc "${CMAKE_CURRENT_BINARY_DIR}/libc")
+ifeq ($(TARGET_ARCH),ia32)
+KERNEL_VIRTUAL_BASE := 0xC0000000
+else ifeq ($(TARGET_ARCH),x86_64)
+KERNEL_VIRTUAL_BASE := 0xFFFFFFFFC0000000
+else
+$(error Unsupported value: TARGET_ARCH = $(TARGET_ARCH))
+endif
 
+include ../../Makefile.common
 
-if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86")
-    SET(KERNEL_VIRTUAL_BASE 0xC0000000)
-elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-    SET(KERNEL_VIRTUAL_BASE 0xFFFFFFFFC0000000)
-endif()
+GLOBAL_INCLUDES := ../include
 
+MODULES := .
 
-
-SET(KERNEL_SRCS
-    kernel.cpp
-)
-
-SET(KERNEL_LIBS
-    libc
-)
+$(eval $(call load-modules,$(MODULES)))
 
 
-INCLUDE_DIRECTORIES(
-    SYSTEM ../include
-    SYSTEM ${CMAKE_SOURCE_DIR}/../libc/include
-)
+ifeq ($(TARGET_ARCH),x86_64)
+CFLAGS		:= $(CFLAGS) -mcmodel=kernel -mno-red-zone
+CXXFLAGS	:= $(CXXFLAGS) -mcmodel=kernel -mno-red-zone
+endif
+
+LDFLAGS := $(LDFLAGS) -e kernel_main -Ttext=$(KERNEL_VIRTUAL_BASE)
 
 
-SET(CMAKE_EXE_LINKER_FLAGS "-nostdlib -e kernel_main -Wl,-Ttext=${KERNEL_VIRTUAL_BASE}")
 
-if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -z max-page-size=0x1000")
-endif()
+.PHONY all:
+all: $(BUILDDIR)/bin/kernel
+
+$(BUILDDIR)/bin/kernel: $(OBJECTS) Makefile
+	@mkdir -p $(dir $@)
+	$(LD) $(LDFLAGS) $(OBJECTS) -o $@
 
 
-ADD_EXECUTABLE(kernel ${KERNEL_SRCS})
+.PHONY: clean
+clean:
+	$(RM) -r $(BUILDDIR)
 
-TARGET_LINK_LIBRARIES(kernel ${KERNEL_LIBS})
+
+-include $(DEPENDENCIES)
