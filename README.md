@@ -22,9 +22,9 @@ requirements):
 
     1) binutils 2.24.90 (i686-elf and x86_64-elf tools)
     2) gcc 4.8.3 (i686-elf and x86_64-elf cross-compilers)
-    3) NASM 2.10.09
-    4) GNU Make 3.81
-    5) MinGW-w64 (i686-w64-mingw32 and x86_64-w64-mingw32 cross-compilers)
+    3) MinGW-w64 (i686-w64-mingw32 and x86_64-w64-mingw32 cross-compilers)
+    4) NASM 2.10.09
+    5) GNU Make 3.81
 
 If you are unsure how to produce the required binutils and gcc cross-compilers,
 take a look here: http://wiki.osdev.org/GCC_Cross-Compiler.
@@ -43,6 +43,6 @@ Makefile targets
 
     - make            --> build all kernel variants
     - make clean      --> cleanup
-    - make iso        --> build an iso image with all kernel variants on it
-    - make run-bochs  --> run the iso image under bochs
-    - make run-qemu   --> run the iso image under qemu
+    - make run-bios   --> run the kernel under qemu (BIOS)
+    - make run-efi    --> run the kernel under qemu (EFI)
+    - make run-bochs  --> run the kernel under bochs (BIOS)
