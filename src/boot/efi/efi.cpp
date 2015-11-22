@@ -24,26 +24,53 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "efi/efi.h"
+#include "efi.hpp"
+#include "memorymap.hpp"
 #include <stdio.h>
-#include <malloc.h>
+#include <string.h>
 
 
-static EFI_SYSTEM_TABLE* efi;
+EFI_HANDLE efi_image;
+EFI_SYSTEM_TABLE* efi;
 
 
 
-extern "C" void __kiznix_putc(unsigned char c)
+void fatal(const char* format, ...)
 {
-    CHAR16 s[3] = { c, 0, 0 };
+    printf("Fatal error: ");
 
-    if (c == '\n')
+    char buffer[500];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+
+    puts(buffer);
+
+    if (efi && efi->BootServices)
     {
-        s[1] = '\r';
+        CHAR16* exitData = NULL;
+        UINTN exitDataSize = 0;
+
+        size_t len = strlen(buffer) + 1;
+        EFI_STATUS status = efi->BootServices->AllocatePool(EfiLoaderData, len*2, (void**)&exitData);
+
+        if (!EFI_ERROR(status))
+        {
+            for (size_t i = 0; i != len; ++i)
+            {
+                exitData[i] = buffer[i];
+            }
+            printf("Converted!\n");
+            efi->ConOut->OutputString(efi->ConOut, exitData);
+            printf("\n^^^^^\n");
+
+        }
+
+        efi->BootServices->Exit(efi_image, 1, exitDataSize, exitData);
     }
 
-    SIMPLE_TEXT_OUTPUT_INTERFACE* self = efi->ConOut;
-    self->OutputString(self, s);
+    for (;;) ;
 }
 
 
@@ -104,36 +131,12 @@ static void console_init()
 
 static void find_memory()
 {
-    UINTN mapSize = 0;
-    UINTN mapKey;
-    UINTN descriptorSize;
-    UINT32 descriptorVersion;
+    MemoryMap memmap;
 
-    EFI_STATUS status = efi->BootServices->GetMemoryMap(&mapSize, 0, &mapKey, &descriptorSize, &descriptorVersion);
-    if (status != EFI_BUFFER_TOO_SMALL)
+    for (size_t i = 0; i != memmap.size(); ++i)
     {
-        printf("Error: First call to GetMemoryMap() returned %d\n", (int)status);
-        return;
-    }
-
-    EFI_MEMORY_DESCRIPTOR* map = (EFI_MEMORY_DESCRIPTOR*)alloca(mapSize);
-
-    status = efi->BootServices->GetMemoryMap(&mapSize, map, &mapKey, &descriptorSize, &descriptorVersion);
-    if (EFI_ERROR(status))
-    {
-        printf("Error: Second call to GetMemoryMap() returned %d\n", (int)status);
-        return;
-    }
-
-    const EFI_MEMORY_DESCRIPTOR* entry = map;
-    const EFI_MEMORY_DESCRIPTOR* end = (EFI_MEMORY_DESCRIPTOR*)((uintptr_t)map + mapSize);
-
-    printf("\nMemory map:\n");
-
-    while (entry < end)
-    {
-        add_memory(entry->Type, entry->PhysicalStart, entry->NumberOfPages * 4096ull, entry->Attribute);
-        entry = (EFI_MEMORY_DESCRIPTOR*)((uintptr_t)entry + descriptorSize);
+        const EFI_MEMORY_DESCRIPTOR& entry = memmap[i];
+        add_memory(entry.Type, entry.PhysicalStart, entry.NumberOfPages * 4096ull, entry.Attribute);
     }
 }
 
@@ -141,8 +144,7 @@ static void find_memory()
 
 extern "C" EFIAPI EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE* systemTable)
 {
-    (void)image;
-
+    efi_image = image;
     efi = systemTable;
 
     console_init();
@@ -153,10 +155,8 @@ extern "C" EFIAPI EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE* system
 
     // Wait for a key press
     UINTN index;
-    EFI_EVENT event = systemTable->ConIn->WaitForKey;
-    systemTable->BootServices->WaitForEvent(1, &event, &index);
+    EFI_EVENT event = efi->ConIn->WaitForKey;
+    efi->BootServices->WaitForEvent(1, &event, &index);
 
     return EFI_SUCCESS;
 }
-
-

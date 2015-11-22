@@ -540,7 +540,7 @@ int snprintf(char *str, size_t size, const char *fmt, ...)
  */
 int printf(const char *fmt, ...)
 {
-    char outbuf[256];
+    char outbuf[500];
     va_list ap;
     int r;
 
@@ -556,6 +556,33 @@ int printf(const char *fmt, ...)
     va_start(ap, fmt);
     r = vsnprintf(outbuf, sizeof(outbuf), fmt, ap);
     va_end(ap);
+
+    /*
+     * Output to terminal.
+     */
+    if ( r > 0 )
+    __kiznix_print(outbuf);
+
+    return r;
+}
+
+
+
+int vprintf(const char* fmt, va_list ap)
+{
+    char outbuf[500];
+    int r;
+
+    /*
+     * Safety check
+     */
+    if ( fmt == NULL )
+    return 0;
+
+    /*
+     * Print into buffer.
+     */
+    r = vsnprintf(outbuf, sizeof(outbuf), fmt, ap);
 
     /*
      * Output to terminal.

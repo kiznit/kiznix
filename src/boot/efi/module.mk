@@ -22,4 +22,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-local_sources := efi.cpp
+local_sources := \
+    efi.cpp \
+    libc.cpp \
+    memorymap.cpp

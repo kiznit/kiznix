@@ -51,13 +51,8 @@ MODULES := . ../../libc
 $(eval $(call load-modules,$(MODULES)))
 
 
-
-# todo: get rid of -mno-stack-arg-probe
 CPPFLAGS	:= $(addprefix -I,$(GLOBAL_INCLUDES))
-CFLAGS		:= $(CFLAGS) -mno-stack-arg-probe
-CXXFLAGS	:= $(CXXFLAGS) -mno-stack-arg-probe
 LDFLAGS		:= -shared -nostdlib -e $(EFI_ENTRY_POINT) --subsystem=10 --image-base=0x100000
-ASFLAGS		:= -f elf
 
 ifeq ($(TARGET_ARCH),ia32)
 CFLAGS		:= $(CFLAGS) -march=i386
