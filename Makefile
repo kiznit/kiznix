@@ -30,8 +30,8 @@ BINDIR ?= $(abspath bin)
 
 
 .PHONY: all
-all:
-	@echo "Hello all"
+all: bios-image efi-image
+
 
 .PHONY: clean
 clean:
