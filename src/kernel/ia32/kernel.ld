@@ -25,16 +25,15 @@
 */
 
 OUTPUT_FORMAT(elf32-i386)
-ENTRY(_start)
+ENTRY(kernel_main)
 
 
 SECTIONS
 {
-    . = 1M;
+    . = 0xF0000000;
 
     .text :
     {
-        *(.multiboot)   /* Make sure the multiboot headers are at the beginning of the image */
         *(.text)
     }
 

@@ -37,7 +37,7 @@ $(eval $(call load-modules,$(MODULES)))
 CPPFLAGS	:= $(addprefix -I,$(GLOBAL_INCLUDES))
 CFLAGS		:= $(CFLAGS) -march=i386
 CXXFLAGS	:= $(CXXFLAGS) -march=i386
-LDFLAGS		:= -T multiboot.ld -nostdlib
+LDFLAGS		:= $(LDFLAGS) -T multiboot.ld
 
 
 

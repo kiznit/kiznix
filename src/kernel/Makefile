@@ -24,14 +24,6 @@
 
 TARGET_ARCH ?= x86_64
 
-ifeq ($(TARGET_ARCH),ia32)
-KERNEL_VIRTUAL_BASE := 0xC0000000
-else ifeq ($(TARGET_ARCH),x86_64)
-KERNEL_VIRTUAL_BASE := 0xFFFFFFFFC0000000
-else
-$(error Unsupported value: TARGET_ARCH = $(TARGET_ARCH))
-endif
-
 include ../../Makefile.common
 
 GLOBAL_INCLUDES := ../include
@@ -46,14 +38,14 @@ CFLAGS		:= $(CFLAGS) -mcmodel=kernel -mno-red-zone
 CXXFLAGS	:= $(CXXFLAGS) -mcmodel=kernel -mno-red-zone
 endif
 
-LDFLAGS := $(LDFLAGS) -e kernel_main -Ttext=$(KERNEL_VIRTUAL_BASE)
+LDFLAGS		:= $(LDFLAGS) -T $(TARGET_ARCH)/kernel.ld
 
 
 
 .PHONY all:
 all: $(BUILDDIR)/bin/kernel
 
-$(BUILDDIR)/bin/kernel: $(OBJECTS) Makefile
+$(BUILDDIR)/bin/kernel: $(OBJECTS) $(TARGET_ARCH)/kernel.ld Makefile
 	@mkdir -p $(dir $@)
 	$(LD) $(LDFLAGS) $(OBJECTS) -o $@
 

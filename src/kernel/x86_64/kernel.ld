@@ -24,17 +24,16 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-OUTPUT_FORMAT(elf32-i386)
-ENTRY(_start)
+OUTPUT_FORMAT(elf64-x86-64)
+ENTRY(kernel_main)
 
 
 SECTIONS
 {
-    . = 1M;
+    . = 0xFFFFFFFFF0000000;
 
     .text :
     {
-        *(.multiboot)   /* Make sure the multiboot headers are at the beginning of the image */
         *(.text)
     }
 
