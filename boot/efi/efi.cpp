@@ -90,7 +90,6 @@ static void add_memory(int type, uint64_t address, uint64_t length, uint64_t att
 
 
 
-
 static void console_init()
 {
     SIMPLE_TEXT_OUTPUT_INTERFACE* self = efi->ConOut;
@@ -129,12 +128,11 @@ static void console_init()
 
 static void find_memory()
 {
-    MemoryMap memmap;
+    MemoryMap map;
 
-    for (size_t i = 0; i != memmap.size(); ++i)
+    for (MemoryMap::iterator it = map.begin(); it != map.end(); ++it)
     {
-        const EFI_MEMORY_DESCRIPTOR& entry = memmap[i];
-        add_memory(entry.Type, entry.PhysicalStart, entry.NumberOfPages * 4096ull, entry.Attribute);
+        add_memory(it->Type, it->PhysicalStart, it->NumberOfPages * 4096ull, it->Attribute);
     }
 }
 

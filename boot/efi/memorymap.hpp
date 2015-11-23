@@ -35,11 +35,32 @@ class MemoryMap
 {
 public:
 
+    class iterator
+    {
+    public:
+
+        iterator(EFI_MEMORY_DESCRIPTOR* ptr, UINTN size) : m_ptr(ptr), m_size(size) {}
+
+        EFI_MEMORY_DESCRIPTOR* get()                    { return m_ptr; }
+        EFI_MEMORY_DESCRIPTOR& operator*()              { return *get(); }
+        EFI_MEMORY_DESCRIPTOR* operator->()             { return get(); }
+        iterator& operator++()                          { m_ptr = (EFI_MEMORY_DESCRIPTOR*)((uintptr_t)m_ptr + m_size); return *this; }
+
+    private:
+        EFI_MEMORY_DESCRIPTOR* m_ptr;
+        UINTN m_size;
+    };
+
+
     MemoryMap();
     ~MemoryMap();
 
-    size_t size() const                                     { return m_size / m_descriptorSize; }
-    const EFI_MEMORY_DESCRIPTOR& operator[](int i) const    { return *(EFI_MEMORY_DESCRIPTOR*)((uintptr_t)m_map + i * m_descriptorSize); }
+    // STL-like interface
+    iterator begin()                                    { return iterator(m_map, m_descriptorSize); }
+    iterator end()                                      { return iterator((EFI_MEMORY_DESCRIPTOR*)((uintptr_t)m_map + m_size), m_descriptorSize); }
+    size_t size() const                                 { return m_size / m_descriptorSize; }
+    EFI_MEMORY_DESCRIPTOR& operator[](int i)            { return *(EFI_MEMORY_DESCRIPTOR*)((uintptr_t)m_map + i * m_descriptorSize); }
+
 
 private:
     EFI_MEMORY_DESCRIPTOR* m_map;
@@ -48,6 +69,19 @@ private:
     UINTN m_descriptorSize;
     UINT32 m_descriptorVersion;
 };
+
+
+
+inline bool operator==(MemoryMap::iterator a, MemoryMap::iterator b)
+{
+    return a.get() == b.get();
+}
+
+
+inline bool operator!=(MemoryMap::iterator a, MemoryMap::iterator b)
+{
+    return !(a == b);
+}
 
 
 #endif
