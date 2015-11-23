@@ -61,10 +61,6 @@ void fatal(const char* format, ...)
             {
                 exitData[i] = buffer[i];
             }
-            printf("Converted!\n");
-            efi->ConOut->OutputString(efi->ConOut, exitData);
-            printf("\n^^^^^\n");
-
         }
 
         efi->BootServices->Exit(efi_image, 1, exitDataSize, exitData);
