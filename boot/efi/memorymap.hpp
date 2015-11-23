@@ -35,19 +35,54 @@ class MemoryMap
 {
 public:
 
+    class iterator
+    {
+    public:
+
+        iterator(EFI_MEMORY_DESCRIPTOR* ptr, size_t size) : m_ptr(ptr), m_size(size) {}
+
+        EFI_MEMORY_DESCRIPTOR* get()                    { return m_ptr; }
+        EFI_MEMORY_DESCRIPTOR& operator*()              { return *get(); }
+        EFI_MEMORY_DESCRIPTOR* operator->()             { return get(); }
+        iterator& operator++()                          { m_ptr = (EFI_MEMORY_DESCRIPTOR*)((uintptr_t)m_ptr + m_size); return *this; }
+
+    private:
+        EFI_MEMORY_DESCRIPTOR* m_ptr;
+        size_t m_size;
+    };
+
+
     MemoryMap();
     ~MemoryMap();
 
-    size_t size() const                                     { return m_size / m_descriptorSize; }
-    const EFI_MEMORY_DESCRIPTOR& operator[](int i) const    { return *(EFI_MEMORY_DESCRIPTOR*)((uintptr_t)m_map + i * m_descriptorSize); }
+    // STL-like interface
+    iterator begin()                                    { return iterator(m_begin, m_descriptorSize); }
+    iterator end()                                      { return iterator(m_end, m_descriptorSize); }
+    size_t size() const                                 { return m_size; }
+    EFI_MEMORY_DESCRIPTOR& operator[](int i)            { return *(EFI_MEMORY_DESCRIPTOR*)((uintptr_t)m_begin + i * m_descriptorSize); }
+
 
 private:
-    EFI_MEMORY_DESCRIPTOR* m_map;
-    UINTN m_size;
-    UINTN m_key;
-    UINTN m_descriptorSize;
-    UINT32 m_descriptorVersion;
+    EFI_MEMORY_DESCRIPTOR* m_begin; // Start of memory map
+    EFI_MEMORY_DESCRIPTOR* m_end;   // One pass the end of the memory map
+    size_t m_size;                  // Number of descriptors
+    size_t m_key;                   // Memory map key
+    size_t m_descriptorSize;        // Descriptor size
+    uint32_t m_descriptorVersion;   // Descriptor version
 };
+
+
+
+inline bool operator==(MemoryMap::iterator a, MemoryMap::iterator b)
+{
+    return a.get() == b.get();
+}
+
+
+inline bool operator!=(MemoryMap::iterator a, MemoryMap::iterator b)
+{
+    return !(a == b);
+}
 
 
 #endif

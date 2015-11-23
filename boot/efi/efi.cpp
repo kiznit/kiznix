@@ -85,9 +85,8 @@ static void add_memory(int type, uint64_t address, uint64_t length, uint64_t att
     unsigned int a0 = attributes >> 32;
     unsigned int a1 = attributes & 0xFFFFFFFF;
 
-    printf("    %d: %08x%08x - %08x%08x (%.2f MB) - %08x%08x\n", type, s0, s1, e0, e1, size, a0, a1);
+    printf("    %2d: %08x%08x - %08x%08x (%.2f MB) - %08x%08x\n", type, s0, s1, e0, e1, size, a0, a1);
 }
-
 
 
 
@@ -129,12 +128,11 @@ static void console_init()
 
 static void find_memory()
 {
-    MemoryMap memmap;
+    MemoryMap map;
 
-    for (size_t i = 0; i != memmap.size(); ++i)
+    for (MemoryMap::iterator it = map.begin(); it != map.end(); ++it)
     {
-        const EFI_MEMORY_DESCRIPTOR& entry = memmap[i];
-        add_memory(entry.Type, entry.PhysicalStart, entry.NumberOfPages * 4096ull, entry.Attribute);
+        add_memory(it->Type, it->PhysicalStart, it->NumberOfPages * 4096ull, it->Attribute);
     }
 }
 

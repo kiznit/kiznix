@@ -63,8 +63,12 @@ MemoryMap::MemoryMap()
         fatal("Failed to get memory map (status = %d)", (int)status);
     }
 
-    m_map = map;
-    m_size = mapSize;
+    // We don't trust the firmware to return a map size that is a multiple of the descriptor size
+    size_t descriptorCount = mapSize / descriptorSize;
+
+    m_begin = map;
+    m_end = (EFI_MEMORY_DESCRIPTOR*)((uintptr_t)map + descriptorCount * descriptorSize);
+    m_size = descriptorCount;
     m_key = mapKey;
     m_descriptorSize = descriptorSize;
     m_descriptorVersion = descriptorVersion;
