@@ -61,6 +61,8 @@ void fatal(const char* format, ...)
             {
                 exitData[i] = buffer[i];
             }
+
+            exitDataSize = len * 2;
         }
 
         efi->BootServices->Exit(efi_image, 1, exitDataSize, exitData);
