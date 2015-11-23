@@ -24,7 +24,7 @@
 
 ROOTDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
-SRCDIR ?= $(ROOTDIR)/src
+SRCDIR ?= $(ROOTDIR)
 BUILDDIR ?= $(abspath build)
 BINDIR ?= $(abspath bin)
 
@@ -36,6 +36,7 @@ all: bios-image efi-image
 .PHONY: clean
 clean:
 	$(RM) -r $(BUILDDIR)
+	$(RM) -r $(BINDIR)
 
 
 ###############################################################################

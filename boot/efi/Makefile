@@ -22,29 +22,50 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-TARGET_ARCH := ia32
 
-include ../../../Makefile.common
+TARGET_ARCH ?= x86_64
 
-GLOBAL_INCLUDES := ../../include ../../libc/include
+ifeq ($(TARGET_ARCH),ia32)
+TOOLPREFIX := i686-w64-mingw32-
+EFI_TARGET_FILENAME := bootia32.efi
+EFI_TARGET_FORMAT := efi-app-ia32
+EFI_ENTRY_POINT := _efi_main
+else ifeq ($(TARGET_ARCH),x86_64)
+TOOLPREFIX := x86_64-w64-mingw32-
+EFI_TARGET_FILENAME := bootx64.efi
+EFI_TARGET_FORMAT := efi-app-x86_64
+EFI_ENTRY_POINT := efi_main
+else
+$(error Invalid value: TARGET_ARCH = $(TARGET_ARCH))
+endif
+
+
+BUILDDIR ?= build/$(TARGET_ARCH)
+
+include ../../Makefile.common
+
+GLOBAL_INCLUDES := ../../include ../../libc/include efi/$(TARGET_ARCH)
 
 MODULES := . ../../libc
 
 $(eval $(call load-modules,$(MODULES)))
 
 
-# Grub is built with -march=i386, so we do the same
 CPPFLAGS	:= $(addprefix -I,$(GLOBAL_INCLUDES))
+LDFLAGS		:= -shared -nostdlib -e $(EFI_ENTRY_POINT) --subsystem=10 --image-base=0x100000
+
+ifeq ($(TARGET_ARCH),ia32)
 CFLAGS		:= $(CFLAGS) -march=i386
 CXXFLAGS	:= $(CXXFLAGS) -march=i386
-LDFLAGS		:= $(LDFLAGS) -T multiboot.ld
+endif
+
 
 
 
 .PHONY all:
-all: $(BUILDDIR)/bin/multiboot
+all: $(BUILDDIR)/bin/$(EFI_TARGET_FILENAME)
 
-$(BUILDDIR)/bin/multiboot: $(OBJECTS) multiboot.ld Makefile
+$(BUILDDIR)/bin/$(EFI_TARGET_FILENAME): $(OBJECTS) Makefile
 	@mkdir -p $(dir $@)
 	$(LD) $(LDFLAGS) $(OBJECTS) -o $@
 
