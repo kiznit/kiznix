@@ -65,7 +65,7 @@ endif
 .PHONY all:
 all: $(BUILDDIR)/bin/$(EFI_TARGET_FILENAME)
 
-$(BUILDDIR)/bin/$(EFI_TARGET_FILENAME): $(OBJECTS) Makefile
+$(BUILDDIR)/bin/$(EFI_TARGET_FILENAME): $(OBJECTS)
 	@mkdir -p $(dir $@)
 	$(LD) $(LDFLAGS) $(OBJECTS) -o $@
 

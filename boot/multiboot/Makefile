@@ -44,7 +44,7 @@ LDFLAGS		:= $(LDFLAGS) -T multiboot.ld
 .PHONY all:
 all: $(BUILDDIR)/bin/multiboot
 
-$(BUILDDIR)/bin/multiboot: $(OBJECTS) multiboot.ld Makefile
+$(BUILDDIR)/bin/multiboot: $(OBJECTS) multiboot.ld
 	@mkdir -p $(dir $@)
 	$(LD) $(LDFLAGS) $(OBJECTS) -o $@
 

@@ -45,7 +45,7 @@ LDFLAGS		:= $(LDFLAGS) -T $(TARGET_ARCH)/kernel.ld
 .PHONY all:
 all: $(BUILDDIR)/bin/kernel
 
-$(BUILDDIR)/bin/kernel: $(OBJECTS) $(TARGET_ARCH)/kernel.ld Makefile
+$(BUILDDIR)/bin/kernel: $(OBJECTS) $(TARGET_ARCH)/kernel.ld
 	@mkdir -p $(dir $@)
 	$(LD) $(LDFLAGS) $(OBJECTS) -o $@
 

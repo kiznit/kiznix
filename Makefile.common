@@ -24,7 +24,7 @@
 
 ROOTDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
-BUILDDIR ?= build
+BUILDDIR ?= $(CURDIR)/build
 
 include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.rules

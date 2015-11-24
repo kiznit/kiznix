@@ -25,8 +25,8 @@
 ROOTDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 SRCDIR ?= $(ROOTDIR)
-BUILDDIR ?= $(abspath build)
-BINDIR ?= $(abspath bin)
+BUILDDIR ?= $(CURDIR)/build
+BINDIR ?= $(CURDIR)/bin
 
 
 .PHONY: all
