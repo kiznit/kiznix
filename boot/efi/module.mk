@@ -24,5 +24,6 @@
 
 local_sources := \
     efi.cpp \
+    fatal.cpp \
     libc.cpp \
     memorymap.cpp

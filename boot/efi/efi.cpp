@@ -35,44 +35,6 @@ EFI_SYSTEM_TABLE* efi;
 
 
 
-void fatal(const char* format, ...)
-{
-    printf("Fatal error: ");
-
-    char buffer[500];
-    va_list args;
-    va_start(args, format);
-    vsnprintf(buffer, sizeof(buffer), format, args);
-    va_end(args);
-
-    puts(buffer);
-
-    if (efi && efi->BootServices)
-    {
-        CHAR16* exitData = NULL;
-        UINTN exitDataSize = 0;
-
-        size_t len = strlen(buffer) + 1;
-        EFI_STATUS status = efi->BootServices->AllocatePool(EfiLoaderData, len*2, (void**)&exitData);
-
-        if (!EFI_ERROR(status))
-        {
-            for (size_t i = 0; i != len; ++i)
-            {
-                exitData[i] = buffer[i];
-            }
-
-            exitDataSize = len * 2;
-        }
-
-        efi->BootServices->Exit(efi_image, 1, exitDataSize, exitData);
-    }
-
-    for (;;) ;
-}
-
-
-
 static void add_memory(int type, uint64_t address, uint64_t length, uint64_t attributes)
 {
     unsigned int s0 = address >> 32;
