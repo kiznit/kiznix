@@ -24,13 +24,17 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "efi/efi.h"
+#include <efi.h>
 
 
 // EFI System Table
 extern EFI_HANDLE efi_image;        // EFI Application Handle (Bootloader)
 extern EFI_SYSTEM_TABLE* efi;       // EFI API
+extern EFI_LOADED_IMAGE gBootImage; // EFI Bootloader Image details
 
+// EFI Interface Guids
+extern EFI_GUID gEfiSimpleFileSystemProtocolGuid;
+extern EFI_GUID gEfiLoadedImageProtocol;
 
 // A fatal error occured! This will the boot services' Exit() API
 void fatal(const char* format, ...) __attribute__ ((noreturn)) __attribute__ ((format (printf, 1, 2)));

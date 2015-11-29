@@ -25,16 +25,19 @@
 */
 
 #include "efi.hpp"
-#include "memorymap.hpp"
 #include <stdio.h>
 #include <string.h>
 
 
 EFI_HANDLE efi_image;
 EFI_SYSTEM_TABLE* efi;
+EFI_LOADED_IMAGE gBootImage;
+
+//EFI_GUID gEfiSimpleFileSystemProtocolGuid = SIMPLE_FILE_SYSTEM_PROTOCOL;
+EFI_GUID gEfiLoadedImageProtocol = LOADED_IMAGE_PROTOCOL;
 
 
-
+/*
 static void add_memory(int type, uint64_t address, uint64_t length, uint64_t attributes)
 {
     unsigned int s0 = address >> 32;
@@ -49,6 +52,7 @@ static void add_memory(int type, uint64_t address, uint64_t length, uint64_t att
 
     printf("    %2d: %08x%08x - %08x%08x (%.2f MB) - %08x%08x\n", type, s0, s1, e0, e1, size, a0, a1);
 }
+*/
 
 
 
@@ -88,6 +92,7 @@ static void console_init()
 
 
 
+/*
 static void find_memory()
 {
     MemoryMap map;
@@ -96,6 +101,51 @@ static void find_memory()
     {
         add_memory(it->Type, it->PhysicalStart, it->NumberOfPages * 4096ull, it->Attribute);
     }
+}
+*/
+
+
+static void load_kernel()
+{
+    printf("\nload_kernel():\n");
+
+    EFI_STATUS status;
+    EFI_LOADED_IMAGE* bootImageInfo;
+
+    status = efi->BootServices->OpenProtocol(efi_image, &gEfiLoadedImageProtocol, (void**)&bootImageInfo, efi_image, NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+    if (EFI_ERROR(status))
+    {
+        fatal("OpenProtocol() returned %d", (int)status);
+    }
+
+
+    printf("DeviceHandle = %p\n", bootImageInfo->DeviceHandle);
+    printf("FilePath = { type: %d, subtype: %d, length: %04x, path: ",
+        bootImageInfo->FilePath->Type,
+        bootImageInfo->FilePath->SubType,
+        bootImageInfo->FilePath->Length[1] * 256 + bootImageInfo->FilePath->Length[0]);
+
+    if (bootImageInfo->FilePath->Type == 4 && bootImageInfo->FilePath->SubType == 4)
+    {
+        FILEPATH_DEVICE_PATH* fp =(FILEPATH_DEVICE_PATH*)bootImageInfo->FilePath;
+        SIMPLE_TEXT_OUTPUT_INTERFACE* self = efi->ConOut;
+        self->OutputString(self, fp->PathName);
+    }
+
+    printf(" }\n");
+
+/*
+    UINTN handleCount;
+    EFI_HANDLE* handles;
+
+    status = efi->BootServices->LocateHandleBuffer(ByProtocol, &gEfiSimpleFileSystemProtocolGuid, NULL, &handleCount, &handles);
+    if (EFI_ERROR(status))
+    {
+        fatal("Unable to locate simple file system protocol");
+    }
+
+    printf("Got %d handles\n", (int)handleCount);
+*/
 }
 
 
@@ -107,9 +157,11 @@ extern "C" EFIAPI EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE* system
 
     console_init();
 
-    printf("Kiznix EFI Application (efi_main) - %d bits.\n", (int)sizeof(void*)*8);
+    printf("Kiznix EFI Bootloader (%d bits)\n\n", (int)sizeof(void*)*8);
 
-    find_memory();
+    //find_memory();
+
+    load_kernel();
 
     // Wait for a key press
     UINTN index;

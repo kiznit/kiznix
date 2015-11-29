@@ -1,0 +1,11 @@
+Name: gnu-efi
+URL: http://sourceforge.net/projects/gnu-efi/
+Version: 3.0.3
+Date:  2015-08-17
+License: BSD
+
+Description:
+Updated version of Intel's EFI Toolkit 2.0. This package contains EFI definitions and a small helper library to write EFI applications.
+
+Local Modifications:
+Added module.mk for compilation with Kiznix makefiles.

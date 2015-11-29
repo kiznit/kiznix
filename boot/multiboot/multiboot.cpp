@@ -202,6 +202,8 @@ extern "C" void multiboot_main(unsigned int magic, void* mbi)
 {
     console_init();
 
+    printf("Kiznix Multiboot Bootloader\n\n");
+
     if (!verify_cpu())
     {
         printf("CPU doesn't support required features, aborting\n");

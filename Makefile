@@ -28,6 +28,8 @@ SRCDIR ?= $(ROOTDIR)
 BUILDDIR ?= $(CURDIR)/build
 BINDIR ?= $(CURDIR)/bin
 
+QEMUFLAGS := -m 8G
+
 
 .PHONY: all
 all: bios-image efi-image

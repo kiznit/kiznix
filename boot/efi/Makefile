@@ -44,14 +44,24 @@ BUILDDIR ?= build/$(TARGET_ARCH)
 
 include ../../Makefile.common
 
-GLOBAL_INCLUDES := ../../include ../../libc/include efi/$(TARGET_ARCH)
+GLOBAL_INCLUDES := \
+	../../include ../../libc/include \
+	../../third_party/gnu-efi/inc \
+	../../third_party/gnu-efi/inc/$(TARGET_ARCH) \
+	../../third_party/gnu-efi/inc/protocol
 
-MODULES := . ../../libc
+DEFINES := HAVE_USE_MS_ABI
+
+MODULES := . ../../libc ../../third_party/gnu-efi
+
 
 $(eval $(call load-modules,$(MODULES)))
 
 
-CPPFLAGS	:= $(addprefix -I,$(GLOBAL_INCLUDES))
+libgcc_path := $(shell $(CC) -print-file-name=libgcc.a)
+
+
+CPPFLAGS	:= $(addprefix -I,$(GLOBAL_INCLUDES)) $(addprefix -D,$(DEFINES))
 LDFLAGS		:= -shared -nostdlib -e $(EFI_ENTRY_POINT) --subsystem=10 --image-base=0x100000
 
 ifeq ($(TARGET_ARCH),ia32)
@@ -67,7 +77,7 @@ all: $(BUILDDIR)/bin/$(EFI_TARGET_FILENAME)
 
 $(BUILDDIR)/bin/$(EFI_TARGET_FILENAME): $(OBJECTS)
 	@mkdir -p $(dir $@)
-	$(LD) $(LDFLAGS) $(OBJECTS) -o $@
+	$(LD) $(LDFLAGS) $(OBJECTS) $(libgcc_path) -o $@
 
 
 .PHONY: clean

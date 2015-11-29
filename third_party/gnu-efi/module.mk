@@ -22,7 +22,14 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#local_srcdir := $(local_srcdir)/lib
+
 local_sources := \
-	efi.cpp \
-	fatal.cpp \
-	libc.cpp
+	$(wildcard $(local_srcdir)/lib/*.c) \
+	$(wildcard $(local_srcdir)/lib/runtime/*.c) \
+	$(local_srcdir)/lib/$(TARGET_ARCH)/initplat.c \
+	$(local_srcdir)/lib/$(TARGET_ARCH)/math.c
+
+local_CFLAGS := -Wno-error
+
+local_includes := $(local_srcdir)/lib
