@@ -45,14 +45,14 @@ BUILDDIR ?= build/$(TARGET_ARCH)
 include ../../Makefile.common
 
 GLOBAL_INCLUDES := \
-	../../include ../../libc/include \
+	../../include \
 	../../third_party/gnu-efi/inc \
 	../../third_party/gnu-efi/inc/$(TARGET_ARCH) \
 	../../third_party/gnu-efi/inc/protocol
 
 DEFINES := HAVE_USE_MS_ABI
 
-MODULES := . ../../libc ../../third_party/gnu-efi
+MODULES := . ../../third_party/gnu-efi
 
 
 $(eval $(call load-modules,$(MODULES)))

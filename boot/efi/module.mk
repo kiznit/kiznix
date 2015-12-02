@@ -23,6 +23,4 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 local_sources := \
-	efi.cpp \
-	fatal.cpp \
-	libc.cpp
+	efi.cpp
