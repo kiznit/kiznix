@@ -5,7 +5,15 @@ Date:  2015-08-17
 License: BSD
 
 Description:
-Updated version of Intel's EFI Toolkit 2.0. This package contains EFI definitions and a small helper library to write EFI applications.
+
+    Library used to write EFI applications using the GNU toolchain. It is based on Intel's EFI Toolkit.
+
+    For reference, the Intel EFI Toolkit can be found here:
+        https://github.com/tianocore/tianocore.github.io/wiki/EFI-Toolkit
+        http://sourceforge.net/projects/efi-toolkit/
+
 
 Local Modifications:
-Added module.mk for compilation with Kiznix makefiles.
+
+    - Added module.mk for compilation with Kiznix makefiles.
+    - Added README.kiznix
