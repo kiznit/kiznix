@@ -50,7 +50,7 @@ GLOBAL_INCLUDES := \
 	../../third_party/gnu-efi/inc/$(TARGET_ARCH) \
 	../../third_party/gnu-efi/inc/protocol
 
-DEFINES := HAVE_USE_MS_ABI
+DEFINES := HAVE_USE_MS_ABI ARCH=$(TARGET_ARCH)
 
 MODULES := . ../../third_party/gnu-efi
 

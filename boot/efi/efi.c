@@ -24,12 +24,19 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "efi.hpp"
+#include <efi.h>
+#include <efilib.h>
+
+#define STRINGIZE_DELAY(x) #x
+#define STRINGIZE(x) STRINGIZE_DELAY(x)
 
 
 
 static void console_init(SIMPLE_TEXT_OUTPUT_INTERFACE* conout)
 {
+    // Mode 0 is 80x25 text mode and always supported
+    // Mode 1 is 80x50 text mode and not always supported
+    // Mode 2+ are differents on every device
     UINTN mode = 0;
     UINTN width = 80;
     UINTN height = 25;
@@ -40,6 +47,7 @@ static void console_init(SIMPLE_TEXT_OUTPUT_INTERFACE* conout)
         EFI_STATUS status = conout->QueryMode(conout, m, &w, &h);
         if (EFI_ERROR(status))
         {
+            // Mode 1 might return EFI_UNSUPPORTED, we still want to check modes 2+
             if (m > 1)
                 break;
         }
@@ -62,18 +70,62 @@ static void console_init(SIMPLE_TEXT_OUTPUT_INTERFACE* conout)
 
 
 
-extern "C" EFI_STATUS efi_main(EFI_HANDLE hImage, EFI_SYSTEM_TABLE* systemTable)
+static EFI_STATUS boot(EFI_HANDLE hImage)
+{
+    EFI_STATUS status;
+    EFI_LOADED_IMAGE* bootLoaderImage = NULL;
+
+    // Get bootloader image information to get at the boot device
+    status = BS->OpenProtocol(hImage, &LoadedImageProtocol, (void**)&bootLoaderImage,
+                              hImage, NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+    if (EFI_ERROR(status))
+    {
+        Print(L"Could not open loaded image protocol");
+        return status;
+    }
+
+    Print(L"Boot device     : %s\n", DevicePathToStr(DevicePathFromHandle(bootLoaderImage->DeviceHandle)));
+    Print(L"Bootloader      : %s\n", DevicePathToStr(bootLoaderImage->FilePath));
+
+    // Load the right kernel for the current architecture
+    EFI_DEVICE_PATH* path = FileDevicePath(bootLoaderImage->DeviceHandle, L"\\kiznix\\kernel_" STRINGIZE(ARCH));
+    EFI_HANDLE hDevice;
+    SIMPLE_READ_FILE fp;
+    status = OpenSimpleReadFile(FALSE, NULL, 0, &path, &hDevice, &fp);
+    if (EFI_ERROR(status))
+    {
+        Print(L"Could not open kernel image file \"%s\"", DevicePathToStr(path));
+        return status;
+    }
+
+    Print(L"Kernel image    : %s\n", DevicePathToStr(path));
+
+    return EFI_SUCCESS;
+}
+
+
+
+EFI_STATUS efi_main(EFI_HANDLE hImage, EFI_SYSTEM_TABLE* systemTable)
 {
     InitializeLib(hImage, systemTable);
 
-    console_init(systemTable->ConOut);
+    console_init(ST->ConOut);
 
-    Print((CHAR16*)L"Kiznix EFI Bootloader (%d bits)\n\n", (int)sizeof(void*)*8);
+    Print(L"Kiznix EFI Bootloader (" STRINGIZE(ARCH) ")\n\n", (int)sizeof(void*)*8);
+
+    EFI_STATUS status = boot(hImage);
+
+    if (EFI_ERROR(status))
+    {
+        CHAR16 buffer[64];
+        StatusToString(buffer, status);
+        Print(L": %s\n", buffer);
+    }
 
     // Wait for a key press
     UINTN index;
-    EFI_EVENT event = systemTable->ConIn->WaitForKey;
-    systemTable->BootServices->WaitForEvent(1, &event, &index);
+    EFI_EVENT event = ST->ConIn->WaitForKey;
+    ST->BootServices->WaitForEvent(1, &event, &index);
 
-    return EFI_SUCCESS;
+    return status;
 }
