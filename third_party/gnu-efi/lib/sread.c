@@ -3,7 +3,7 @@
 Copyright (c) 1998  Intel Corporation
 
 Module Name:
-
+    
     sread.c
 
 Abstract:
@@ -27,7 +27,7 @@ typedef struct _SIMPLE_READ_FILE {
     EFI_FILE_HANDLE     FileHandle;
 } SIMPLE_READ_HANDLE;
 
-
+       
 
 EFI_STATUS
 OpenSimpleReadFile (
@@ -44,7 +44,7 @@ Routine Description:
 
     Opens a file for (simple) reading.  The simple read abstraction
     will access the file either from a memory copy, from a file
-    system interface, or from the load file interface.
+    system interface, or from the load file interface. 
 
 Arguments:
 
@@ -62,7 +62,7 @@ Returns:
     EFI_FILE_HANDLE             FileHandle, LastHandle;
     EFI_STATUS                  Status;
     EFI_LOAD_FILE_INTERFACE     *LoadFile;
-
+  
     FHand = NULL;
     UserFilePath = *FilePath;
 
@@ -89,7 +89,7 @@ Returns:
         *DeviceHandle = NULL;
         Status = EFI_SUCCESS;
         goto Done;
-    }
+    } 
 
     //
     // Attempt to access the file via a file system interface
@@ -128,7 +128,7 @@ Returns:
         if (EFI_ERROR(Status)) {
             break;
         }
-
+        
         //
         // Open this file path node
         //
@@ -138,18 +138,18 @@ Returns:
 
         Status = uefi_call_wrapper(
 			LastHandle->Open,
-			5,
+			5, 
                         LastHandle,
                         &FileHandle,
                         FilePathNode->PathName,
                         EFI_FILE_MODE_READ,
                         0
                         );
-
+        
         //
         // Close the last node
         //
-
+        
         uefi_call_wrapper(LastHandle->Close, 1, LastHandle);
 
         //
@@ -218,13 +218,13 @@ Returns:
                     );
 
         //
-        // We expect a buffer too small error to inform us
+        // We expect a buffer too small error to inform us 
         // of the buffer size needed
         //
 
         if (Status == EFI_BUFFER_TOO_SMALL) {
             SourceBuffer = AllocatePool (SourceSize);
-
+            
             if (SourceBuffer) {
                 FHand->FreeBuffer = TRUE;
                 FHand->Source = SourceBuffer;
@@ -238,7 +238,7 @@ Returns:
                             BootPolicy,
                             &SourceSize,
                             SourceBuffer
-                            );
+                            );  
             }
         }
 
@@ -355,28 +355,4 @@ CloseSimpleReadFile (
     //
 
     FreePool (FHand);
-}
-
-
-UINT64
-SizeSimpleReadFile (
-    IN SIMPLE_READ_FILE     UserHandle
-    )
-{
-    SIMPLE_READ_HANDLE      *FHand;
-
-    FHand = UserHandle;
-    ASSERT (FHand->Signature == SIMPLE_READ_SIGNATURE);
-
-    if (FHand->FileHandle)
-    {
-        EFI_FILE_INFO* info = LibFileInfo(FHand->FileHandle);
-        UINT64 size = info->FileSize;
-        FreePool(info);
-        return size;
-    }
-    else
-    {
-        return FHand->SourceSize;
-    }
 }

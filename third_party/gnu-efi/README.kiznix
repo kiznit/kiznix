@@ -17,4 +17,3 @@ Local Modifications:
 
     - Added module.mk for compilation with Kiznix makefiles.
     - Added README.kiznix
-    - Added function SizeSimpleReadFile()
