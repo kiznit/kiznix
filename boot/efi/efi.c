@@ -101,10 +101,10 @@ static EFI_STATUS boot(EFI_HANDLE hImage)
     }
 
     Print(L"Kernel image    : %s\n", szPath);
+    Print(L"Kernel size     : %ld\n", SizeSimpleReadFile(fp));
 
     return EFI_SUCCESS;
 }
-
 
 
 
