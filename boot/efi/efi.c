@@ -26,6 +26,7 @@
 
 #include <efi.h>
 #include <efilib.h>
+#include <elf.h>
 
 #define STRINGIZE_DELAY(x) #x
 #define STRINGIZE(x) STRINGIZE_DELAY(x)
@@ -101,7 +102,26 @@ static EFI_STATUS boot(EFI_HANDLE hImage)
     }
 
     Print(L"Kernel image    : %s\n", szPath);
-    Print(L"Kernel size     : %ld\n", SizeSimpleReadFile(fp));
+
+    UINTN elfSize = SizeSimpleReadFile(fp);
+    void* elfImage = AllocatePool(elfSize);
+    UINTN readSize = elfSize;
+    status = ReadSimpleReadFile(fp, 0, &readSize, elfImage);
+    if (EFI_ERROR(status) || readSize != elfSize)
+    {
+        Print(L"Could not load kernel \"%s\"", szPath);
+        return status;
+    }
+
+    Print(L"Kernel size     : %d\n", elfSize);
+
+    elf_context elf;
+    if (!elf_init(&elf, elfImage, elfSize))
+    {
+        Print(L"Unrecognized file format for \"%s\"", szPath);
+        return EFI_LOAD_ERROR;
+    }
+
 
     return EFI_SUCCESS;
 }
