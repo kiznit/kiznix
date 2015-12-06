@@ -88,17 +88,20 @@ static EFI_STATUS boot(EFI_HANDLE hImage)
     Print(L"Bootloader      : %s\n", DevicePathToStr(bootLoaderImage->FilePath));
 
     // Load the right kernel for the current architecture
-    EFI_DEVICE_PATH* path = FileDevicePath(bootLoaderImage->DeviceHandle, L"\\kiznix\\kernel_" STRINGIZE(ARCH));
+    CHAR16 szPath[] = L"\\kiznix\\kernel_" STRINGIZE(ARCH);
+
+    EFI_DEVICE_PATH* path = FileDevicePath(bootLoaderImage->DeviceHandle, szPath);
     EFI_HANDLE hDevice;
     SIMPLE_READ_FILE fp;
     status = OpenSimpleReadFile(FALSE, NULL, 0, &path, &hDevice, &fp);
     if (EFI_ERROR(status))
     {
-        Print(L"Could not open kernel image file \"%s\"", DevicePathToStr(path));
+        Print(L"Could not open kernel image file \"%s\"", szPath);
         return status;
     }
 
-    Print(L"Kernel image    : %s\n", DevicePathToStr(path));
+    Print(L"Kernel image    : %s\n", szPath);
+    Print(L"Kernel size     : %ld\n", SizeSimpleReadFile(fp));
 
     return EFI_SUCCESS;
 }
