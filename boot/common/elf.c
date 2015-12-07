@@ -70,6 +70,7 @@ int elf_init(elf_context* context, const char* image, size_t size)
             return 0;
 
         context->header32 = header;
+        context->entry = header->e_entry;
     }
     else if (ident->class == ELF_CLASS_64)
     {
@@ -88,6 +89,7 @@ int elf_init(elf_context* context, const char* image, size_t size)
             return 0;
 
         context->header64 = header;
+        context->entry = header->e_entry;
     }
 
     // This elf is looking good...

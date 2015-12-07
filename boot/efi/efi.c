@@ -31,6 +31,8 @@
 #define STRINGIZE_DELAY(x) #x
 #define STRINGIZE(x) STRINGIZE_DELAY(x)
 
+#define EfiMemoryKiznixKernel 0x80000000
+
 
 
 static void console_init(SIMPLE_TEXT_OUTPUT_INTERFACE* conout)
@@ -128,7 +130,23 @@ static EFI_STATUS boot(EFI_HANDLE hImage)
         if (!elf_read_segment(&elf, i, &segment))
             break;
 
-        Print(L"Segment %d:\n", i);
+        if (segment.type != ELF_TYPE_LOAD)
+        {
+            Print(L"Don't know how to handle program header of type %d, skipping\n", segment.type);
+            continue;
+        }
+
+        uint64_t pageCount = EFI_SIZE_TO_PAGES(segment.size);
+        uint64_t physicalAddress;
+        status = BS->AllocatePages(AllocateAnyPages, EfiMemoryKiznixKernel, pageCount, &physicalAddress);
+        if (EFI_ERROR(status))
+        {
+            Print(L"Failed to allocate memory loading \"%s\"", szPath);
+            return status;
+        }
+
+        Print(L"Allocated %ld pages at %lx for segment %d:\n", pageCount, physicalAddress, i);
+
         Print(L"    type: %x\n", segment.type);
         Print(L"    flags: %x\n", segment.flags);
         Print(L"    data: %lx\n", segment.data);
@@ -136,7 +154,19 @@ static EFI_STATUS boot(EFI_HANDLE hImage)
         Print(L"    address: %lx\n", segment.address);
         Print(L"    size: %lx\n", segment.size);
         Print(L"    alignment: %lx\n", segment.alignment);
+
+        // Copy data
+        char* p = (char*)(uintptr_t)physicalAddress;
+        CopyMem(p, segment.data, segment.lenData);
+
+        // Clear remaining memory
+        if (segment.size > segment.lenData)
+        {
+            ZeroMem(p + segment.lenData, segment.size - segment.lenData);
+        }
     }
+
+    Print(L"Entry point: %lx\n", elf.entry);
 
     return EFI_SUCCESS;
 }

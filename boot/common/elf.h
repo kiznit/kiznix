@@ -126,6 +126,12 @@ typedef struct elf_section64
 
 
 
+#define ELF_TYPE_LOAD 1
+
+#define ELF_FLAG_EXEC 1
+#define ELF_FLAG_WRITE 2
+#define ELF_FLAG_READ 4
+
 typedef struct elf_segment32
 {
     uint32_t    p_type;         // Segment type
@@ -158,6 +164,7 @@ typedef struct elf_context
     size_t          size;       // Size of elf image in memory
     elf_header32*   header32;   // Header for 32 bits elf files
     elf_header64*   header64;   // Header for 64 bits elf files
+    uint64_t        entry;      // Entry point (virtual address)
 
 } elf_context;
 
