@@ -24,9 +24,18 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+char data[100];
+
+char data2[] = { 1,2,3,4,5,6,7,8,9,10 };
 
 
 // Kernel entry point
-extern "C" void kernel_main()
+extern "C" const char* kernel_main()
 {
+    for (int i = 0; i!= 100; ++i)
+    {
+        data[i] = i;
+    }
+
+    return "abcdef";
 }

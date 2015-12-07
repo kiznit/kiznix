@@ -94,3 +94,63 @@ int elf_init(elf_context* context, const char* image, size_t size)
 
     return 1;
 }
+
+
+int elf_read_segment(elf_context* context, int index, elf_segment* segment)
+{
+    if (context->header32)
+    {
+        elf_header32* header = context->header32;
+
+        if (index < 0 || index >= context->header32->e_phnum)
+            return 0;
+
+        uintptr_t offset = header->e_phoff + index * header->e_phentsize;
+        if (offset > context->size - header->e_phentsize)
+            return 0;
+
+        elf_segment32* s = (elf_segment32*)(context->image + offset);
+
+        segment->type = s->p_type;
+        segment->flags = s->p_flags;
+        segment->data = context->image + s->p_offset;
+        segment->lenData = s->p_filesz;
+        segment->address = s->p_vaddr;
+        segment->size = s->p_memsz;
+        segment->alignment = s->p_align;
+    }
+    else if (context->header64)
+    {
+       elf_header64* header = context->header64;
+
+        if (index < 0 || index >= context->header64->e_phnum)
+            return 0;
+
+        uintptr_t offset = header->e_phoff + index * header->e_phentsize;
+        if (offset > context->size - header->e_phentsize)
+            return 0;
+
+        elf_segment64* s = (elf_segment64*)(context->image + offset);
+
+        segment->type = s->p_type;
+        segment->flags = s->p_flags;
+        segment->data = context->image + s->p_offset;
+        segment->lenData = s->p_filesz;
+        segment->address = s->p_vaddr;
+        segment->size = s->p_memsz;
+        segment->alignment = s->p_align;\
+    }
+    else
+    {
+        return 0;
+    }
+
+    // Validation
+    if (segment->data < context->image)
+        return 0;
+
+    if (segment->data + segment->lenData > context->image + context->size)
+        return 0;
+
+    return 1;
+}

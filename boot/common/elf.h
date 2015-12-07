@@ -75,7 +75,6 @@ typedef struct elf_header32
     uint16_t    e_shstrndx; // Section header string table index
 } elf_header32;
 
-
 typedef struct elf_header64
 {
     elf_ident   e_ident;    // Magic number and other info
@@ -95,6 +94,64 @@ typedef struct elf_header64
 } elf_header64;
 
 
+
+
+typedef struct elf_section32
+{
+    uint32_t    sh_name;        // Section name (string tbl index)
+    uint32_t    sh_type;        // Section type
+    uint32_t    sh_flags;       // Section flags
+    uint32_t    sh_addr;        // Section virtual addr at execution
+    uint32_t    sh_offset;      // Section file offset
+    uint32_t    sh_size;        // Section size in bytes
+    uint32_t    sh_link;        // Link to another section
+    uint32_t    sh_info;        // Additional section information
+    uint32_t    sh_addralign;   // Section alignment
+    uint32_t    sh_entsize;     // Entry size if section holds table
+} elf_section32;
+
+typedef struct elf_section64
+{
+    uint32_t    sh_name;        // Section name (string tbl index)
+    uint32_t    sh_type;        // Section type
+    uint64_t    sh_flags;       // Section flags
+    uint64_t    sh_addr;        // Section virtual addr at execution
+    uint64_t    sh_offset;      // Section file offset
+    uint64_t    sh_size;        // Section size in bytes
+    uint32_t    sh_link;        // Link to another section
+    uint32_t    sh_info;        // Additional section information
+    uint64_t    sh_addralign;   // Section alignment
+    uint64_t    sh_entsize;     // Entry size if section holds table
+} elf_section64;
+
+
+
+typedef struct elf_segment32
+{
+    uint32_t    p_type;         // Segment type
+    uint32_t    p_offset;       // Segment file offset
+    uint32_t    p_vaddr;        // Segment virtual address
+    uint32_t    p_paddr;        // Segment physical address
+    uint32_t    p_filesz;       // Segment size in file
+    uint32_t    p_memsz;        // Segment size in memory
+    uint32_t    p_flags;        // Segment flags
+    uint32_t    p_align;        // Segment alignment
+} elf_segment32;
+
+typedef struct elf_segment64
+{
+    uint32_t    p_type;         // Segment type
+    uint32_t    p_flags;        // Segment flags
+    uint64_t    p_offset;       // Segment file offset
+    uint64_t    p_vaddr;        // Segment virtual address
+    uint64_t    p_paddr;        // Segment physical address
+    uint64_t    p_filesz;       // Segment size in file
+    uint64_t    p_memsz;        // Segment size in memory
+    uint64_t    p_align;        // Segment alignment
+} elf_segment64;
+
+
+
 typedef struct elf_context
 {
     const char*     image;      // Start of elf image in memory
@@ -105,7 +162,21 @@ typedef struct elf_context
 } elf_context;
 
 
-int elf_init(elf_context* context, const char* image, size_t size);
+typedef struct elf_segment
+{
+    uint32_t    type;           // Segment type
+    uint32_t    flags;          // Segment flags
+    const char* data;           // Binary image
+    uint64_t    lenData;        // Length of image in file
+    uint64_t    address;        // Virtual address
+    uint64_t    size;           // Length of segment in memory
+    uint64_t    alignment;      // Alignment
 
+} elf_segment;
+
+
+
+int elf_init(elf_context* context, const char* image, size_t size);
+int elf_read_segment(elf_context* context, int index, elf_segment* segment);
 
 #endif

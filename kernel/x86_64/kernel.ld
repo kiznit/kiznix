@@ -28,29 +28,37 @@ OUTPUT_FORMAT(elf64-x86-64)
 ENTRY(kernel_main)
 
 
+PHDRS
+{
+    segment_text PT_LOAD;
+    segment_rodata PT_LOAD;
+    segment_data PT_LOAD;
+}
+
+
 SECTIONS
 {
     . = 0xFFFFFFFFF0000000;
 
-    .text :
+    .text BLOCK(4K) :
     {
         *(.text)
-    }
+    } : segment_text
 
-    .rodata :
+    .rodata BLOCK(4K) :
     {
         *(.rodata*)
-    }
+    } : segment_rodata
 
-    .data :
+    .data BLOCK(4K) :
     {
         *(.data*)
-    }
+    } : segment_data
 
     .bss :
     {
         *(.bss)
-    }
+    } : segment_data
 
     /DISCARD/ :
     {

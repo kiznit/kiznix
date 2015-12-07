@@ -122,6 +122,21 @@ static EFI_STATUS boot(EFI_HANDLE hImage)
         return EFI_LOAD_ERROR;
     }
 
+    for (int i = 0; ; ++i)
+    {
+        elf_segment segment;
+        if (!elf_read_segment(&elf, i, &segment))
+            break;
+
+        Print(L"Segment %d:\n", i);
+        Print(L"    type: %x\n", segment.type);
+        Print(L"    flags: %x\n", segment.flags);
+        Print(L"    data: %lx\n", segment.data);
+        Print(L"    lenData: %lx\n", segment.lenData);
+        Print(L"    address: %lx\n", segment.address);
+        Print(L"    size: %lx\n", segment.size);
+        Print(L"    alignment: %lx\n", segment.alignment);
+    }
 
     return EFI_SUCCESS;
 }
