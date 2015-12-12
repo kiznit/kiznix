@@ -27,12 +27,10 @@
 #include <efi.h>
 #include <efilib.h>
 #include <elf.h>
+#include <memory.h>
 
 #define STRINGIZE_DELAY(x) #x
 #define STRINGIZE(x) STRINGIZE_DELAY(x)
-
-#define EfiMemoryKiznixKernel 0x80000000
-
 
 
 static void console_init(SIMPLE_TEXT_OUTPUT_INTERFACE* conout)
@@ -138,7 +136,13 @@ static EFI_STATUS boot(EFI_HANDLE hImage)
 
         uint64_t pageCount = EFI_SIZE_TO_PAGES(segment.size);
         uint64_t physicalAddress;
-        status = BS->AllocatePages(AllocateAnyPages, EfiMemoryKiznixKernel, pageCount, &physicalAddress);
+
+        /*
+            Using a memory type of 0x80000000 (reserved to OS loaders) causes GetMemoryMap()
+            to hang on my computer (Asus Maximums VI Hero with BIOS version 1603 x64 08/15/2014).
+            For this reason, we use memory type EfiLoaderData which works well enough for us.
+        */
+        status = BS->AllocatePages(AllocateAnyPages, EfiLoaderData, pageCount, &physicalAddress);
         if (EFI_ERROR(status))
         {
             Print(L"Failed to allocate memory loading \"%s\"", szPath);
@@ -167,6 +171,85 @@ static EFI_STATUS boot(EFI_HANDLE hImage)
     }
 
     Print(L"Entry point: %lx\n", elf.entry);
+
+    UINTN descriptorCount;
+    UINTN mapKey;
+    UINTN descriptorSize;
+    UINT32 descriptorVersion;
+    Print(L"\nMemoryMap:\n");
+
+    EFI_MEMORY_DESCRIPTOR* memoryMap = LibMemoryMap(&descriptorCount, &mapKey, &descriptorSize, &descriptorVersion);
+
+    if (!memoryMap)
+    {
+        Print(L"Failed to retrieve memory map!\n");
+        return EFI_LOAD_ERROR;
+    }
+
+
+    MemoryTable memoryTable;
+    memory_init(&memoryTable);
+
+    EFI_MEMORY_DESCRIPTOR* descriptor = memoryMap;
+    for (UINTN i = 0; i != descriptorCount; ++i, descriptor = NextMemoryDescriptor(descriptor, descriptorSize))
+    {
+        MemoryType type;
+
+        switch (descriptor->Type)
+        {
+            case EfiUnusableMemory:
+                type = MemoryType_Unusable;
+                break;
+
+            case EfiLoaderCode:
+            case EfiLoaderData:
+            case EfiBootServicesCode:
+            case EfiBootServicesData:
+            case EfiConventionalMemory:
+                if (descriptor->Attribute & EFI_MEMORY_WB)
+                    type = MemoryType_Available;
+                else
+                    type = MemoryType_Reserved;
+                break;
+
+            case EfiRuntimeServicesCode:
+            case EfiRuntimeServicesData:
+                type = MemoryType_FirmwareRuntime;
+                break;
+
+            case EfiACPIReclaimMemory:
+                type = MemoryType_ACPIReclaim;
+                break;
+
+            case EfiACPIMemoryNVS:
+                type = MemoryType_ACPIRuntime;
+                break;
+
+            case EfiReservedMemoryType:
+            case EfiMemoryMappedIO:
+            case EfiMemoryMappedIOPortSpace:
+            case EfiPalCode:
+            default:
+                type = MemoryType_Reserved;
+                break;
+        }
+
+
+        uint64_t start = descriptor->PhysicalStart;
+        uint64_t end = start + descriptor->NumberOfPages * EFI_PAGE_SIZE;
+
+        memory_add_entry(&memoryTable, start, end, type);
+    }
+
+    memory_sanitize(&memoryTable);
+
+    Print(L"    Type      Start             End\n");
+    for (int i = 0; i != memoryTable.count; ++i)
+    {
+        MemoryEntry* entry = &memoryTable.entries[i];
+        Print(L"%2d:  %8x  %16lx  %16lx\n", i, entry->type, entry->start, entry->end);
+    }
+
 
     return EFI_SUCCESS;
 }
