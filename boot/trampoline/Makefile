@@ -35,16 +35,16 @@ $(eval $(call load-modules,$(MODULES)))
 
 # Grub is built with -march=i386, so we do the same
 CPPFLAGS	:= $(addprefix -I,$(GLOBAL_INCLUDES))
-CFLAGS		:= $(CFLAGS) -march=i386
-CXXFLAGS	:= $(CXXFLAGS) -march=i386
-LDFLAGS		:= $(LDFLAGS) -shared -e trampoline_main
+CFLAGS		:= $(CFLAGS) -fpic -march=i386
+CXXFLAGS	:= $(CXXFLAGS) -fpic -march=i386
+LDFLAGS		:= $(LDFLAGS) -shared -T trampoline.ld
 
 
 
 .PHONY all:
 all: $(BUILDDIR)/bin/trampoline
 
-$(BUILDDIR)/bin/trampoline: $(OBJECTS)
+$(BUILDDIR)/bin/trampoline: $(OBJECTS) trampoline.ld
 	@mkdir -p $(dir $@)
 	$(LD) $(LDFLAGS) $(OBJECTS) -o $@
 

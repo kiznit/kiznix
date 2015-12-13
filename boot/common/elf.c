@@ -60,7 +60,7 @@ int elf_init(elf_context* context, const char* image, size_t size)
 
         elf_header32* header = (elf_header32*)image;
 
-        if (header->e_type != ELF_ET_EXEC)
+        if (header->e_type != ELF_ET_EXEC && header->e_type != ELF_ET_DYN)
             return 0;
 
         if (header->e_machine != ELF_EM_386)
@@ -79,7 +79,7 @@ int elf_init(elf_context* context, const char* image, size_t size)
 
         elf_header64* header = (elf_header64*)image;
 
-        if (header->e_type != ELF_ET_EXEC)
+        if (header->e_type != ELF_ET_EXEC && header->e_type != ELF_ET_DYN)
             return 0;
 
         if (header->e_machine != ELF_EM_EM_X86_64)

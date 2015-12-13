@@ -24,7 +24,18 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+char data[100];
 
-void trampoline_main()
+char data2[] = { 1,2,3,4,5,6,7,8,9,10 };
+
+
+// Trampoline entry point
+extern "C" const char* trampoline_main()
 {
+    for (int i = 0; i!= 100; ++i)
+    {
+        data[i] = i;
+    }
+
+    return "abcdef";
 }

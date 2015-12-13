@@ -53,6 +53,7 @@ typedef struct elf_ident
 
 
 #define ELF_ET_EXEC 2
+#define ELF_ET_DYN 3
 
 #define ELF_EM_386 3
 #define ELF_EM_EM_X86_64 62
@@ -126,11 +127,12 @@ typedef struct elf_section64
 
 
 
-#define ELF_TYPE_LOAD 1
+#define ELF_PT_LOAD 1
+#define ELF_PT_DYNAMIC 2
 
-#define ELF_FLAG_EXEC 1
-#define ELF_FLAG_WRITE 2
-#define ELF_FLAG_READ 4
+#define ELF_PF_EXEC 1
+#define ELF_PF_WRITE 2
+#define ELF_PF_READ 4
 
 typedef struct elf_segment32
 {
@@ -155,6 +157,24 @@ typedef struct elf_segment64
     uint64_t    p_memsz;        // Segment size in memory
     uint64_t    p_align;        // Segment alignment
 } elf_segment64;
+
+
+
+#define DT_REL 17
+#define DT_RELSZ 18
+#define DT_RELENT 19
+
+typedef struct elf_dynamic32
+{
+    int32_t d_tag;
+    union
+    {
+        uint32_t d_val;
+        uint32_t d_ptr;
+    } d_un;
+
+} elf_dynamic32;
+
 
 
 
