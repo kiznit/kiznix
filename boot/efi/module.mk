@@ -25,3 +25,6 @@
 local_sources := \
 	efi.c \
 	libc.c
+
+local_CFLAGS := -Wno-format
+local_CXXFLAGS := -Wno-format

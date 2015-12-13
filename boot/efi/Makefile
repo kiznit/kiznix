@@ -45,6 +45,7 @@ BUILDDIR ?= build/$(TARGET_ARCH)
 include ../../Makefile.common
 
 GLOBAL_INCLUDES := \
+	. \
 	../../include \
 	../common \
 	../../third_party/gnu-efi/inc \

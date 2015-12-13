@@ -24,61 +24,20 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "stdio.h"
-#include "string.h"
-#include <efi.h>
-#include <efilib.h>
+#ifndef INCLUDED_EFI_STRING_H
+#define INCLUDED_EFI_STRING_H
 
+#include <stddef.h>
 
-// _IPrint is an internal efilib internal print function
-UINTN _IPrint(
-    IN UINTN                            Column,
-    IN UINTN                            Row,
-    IN SIMPLE_TEXT_OUTPUT_INTERFACE     *Out,
-    IN CHAR16                           *fmt,
-    IN CHAR8                            *fmta,
-    IN va_list                          args
-);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+void* memcpy(void* destination, const void* source, size_t count);
+void* memset(void* memory, int value, size_t count);
 
-
-void* memcpy(void* destination, const void* source, size_t count)
-{
-    CopyMem(destination, source, count);
-    return destination;
+#ifdef __cplusplus
 }
+#endif
 
-
-
-void* memset(void* memory, int value, size_t count)
-{
-    SetMem(memory, count, value);
-    return memory;
-}
-
-
-
-int printf(const char* format, ...)
-{
-    va_list args;
-
-    va_start(args, format);
-    int result = vprintf(format, args);
-    va_end(args);
-
-    return result;
-}
-
-
-
-int vprintf(const char* format, va_list args)
-{
-    if (ST && ST->ConOut)
-    {
-        return _IPrint ((UINTN) -1, (UINTN) -1, ST->ConOut, NULL, (CHAR8*)format, args);
-    }
-    else
-    {
-        return -1;
-    }
-}
+#endif

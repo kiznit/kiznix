@@ -30,6 +30,6 @@ local_sources := \
 	$(local_srcdir)/lib/$(TARGET_ARCH)/initplat.c \
 	$(local_srcdir)/lib/$(TARGET_ARCH)/math.c
 
-local_CFLAGS := -Wno-error
+local_CFLAGS := -fno-strict-aliasing -Wno-error
 
 local_includes := $(local_srcdir)/lib

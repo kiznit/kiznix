@@ -28,6 +28,7 @@
 #include <efilib.h>
 #include <elf.h>
 #include <memory.h>
+#include <stdio.h>
 
 #define STRINGIZE_DELAY(x) #x
 #define STRINGIZE(x) STRINGIZE_DELAY(x)
@@ -95,11 +96,11 @@ static EFI_STATUS load_elf(EFI_HANDLE hDevice, CHAR16* szPath, elf_info* info)
     status = OpenSimpleReadFile(FALSE, NULL, 0, &path, &hDevice, &fp);
     if (EFI_ERROR(status))
     {
-        Print(L"Could not open elf binary: \"%s\"", szPath);
+        printf("Could not open elf binary: \"%s\"", szPath);
         return status;
     }
 
-    Print(L"Elf image       : %s\n", szPath);
+    printf("Elf image       : %s\n", szPath);
 
     UINTN elfSize = SizeSimpleReadFile(fp);
     void* elfImage = AllocatePool(elfSize);
@@ -107,16 +108,16 @@ static EFI_STATUS load_elf(EFI_HANDLE hDevice, CHAR16* szPath, elf_info* info)
     status = ReadSimpleReadFile(fp, 0, &readSize, elfImage);
     if (EFI_ERROR(status) || readSize != elfSize)
     {
-        Print(L"Could not load elf binary: \"%s\"", szPath);
+        printf("Could not load elf binary: \"%s\"", szPath);
         return status;
     }
 
-    Print(L"Elf size        : %d\n", elfSize);
+    printf("Elf size        : %d\n", elfSize);
 
     elf_context elf;
     if (!elf_init(&elf, elfImage, elfSize))
     {
-        Print(L"Unrecognized file format: \"%s\"", szPath);
+        printf("Unrecognized file format: \"%s\"", szPath);
         return EFI_LOAD_ERROR;
     }
 
@@ -127,14 +128,14 @@ static EFI_STATUS load_elf(EFI_HANDLE hDevice, CHAR16* szPath, elf_info* info)
             break;
 
 /*
-        Print(L"Segment %d:\n", i);
-        Print(L"    type: %x\n", segment.type);
-        Print(L"    flags: %x\n", segment.flags);
-        Print(L"    data: %lx\n", segment.data);
-        Print(L"    lenData: %lx\n", segment.lenData);
-        Print(L"    address: %lx\n", segment.address);
-        Print(L"    size: %lx\n", segment.size);
-        Print(L"    alignment: %lx\n", segment.alignment);
+        printf("Segment %d:\n", i);
+        printf("    type: %x\n", segment.type);
+        printf("    flags: %x\n", segment.flags);
+        printf("    data: %lx\n", segment.data);
+        printf("    lenData: %lx\n", segment.lenData);
+        printf("    address: %lx\n", segment.address);
+        printf("    size: %lx\n", segment.size);
+        printf("    alignment: %lx\n", segment.alignment);
 */
         if (segment.type == ELF_PT_LOAD)
         {
@@ -149,7 +150,7 @@ static EFI_STATUS load_elf(EFI_HANDLE hDevice, CHAR16* szPath, elf_info* info)
             status = BS->AllocatePages(AllocateAnyPages, EfiLoaderData, pageCount, &physicalAddress);
             if (EFI_ERROR(status))
             {
-                Print(L"Failed to allocate memory loading \"%s\"", szPath);
+                printf("Failed to allocate memory loading \"%s\"", szPath);
                 return status;
             }
 
@@ -201,21 +202,21 @@ static EFI_STATUS load_elf(EFI_HANDLE hDevice, CHAR16* szPath, elf_info* info)
                 }
             }
 
-            Print(L"Relocation table at %x, size %d\n", relocs, relocsSize);
+            printf("Relocation table at %x, size %d\n", relocs, relocsSize);
         }
         else
         {
-            Print(L"Don't know how to handle program header of type %d, skipping\n", segment.type);
+            printf("Don't know how to handle program header of type %d, skipping\n", segment.type);
             continue;
         }
     }
 
     info->entry = elf.entry;
 
-    Print(L"Elf code segment  : %lx - %lx\n", info->code_start, info->code_end);
-    Print(L"Elf rodata segment: %lx - %lx\n", info->rodata_start, info->rodata_end);
-    Print(L"Elf data segment  : %lx - %lx\n", info->data_start, info->data_end);
-    Print(L"Elf entry point   : %lx\n", info->entry);
+    printf("Elf code segment  : %lx - %lx\n", info->code_start, info->code_end);
+    printf("Elf rodata segment: %lx - %lx\n", info->rodata_start, info->rodata_end);
+    printf("Elf data segment  : %lx - %lx\n", info->data_start, info->data_end);
+    printf("Elf entry point   : %lx\n", info->entry);
 
     return EFI_SUCCESS;
 }
@@ -232,12 +233,12 @@ static EFI_STATUS boot(EFI_HANDLE hImage)
                               hImage, NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
     if (EFI_ERROR(status))
     {
-        Print(L"Could not open loaded image protocol");
+        printf("Could not open loaded image protocol");
         return status;
     }
 
-    Print(L"Boot device     : %s\n", DevicePathToStr(DevicePathFromHandle(bootLoaderImage->DeviceHandle)));
-    Print(L"Bootloader      : %s\n", DevicePathToStr(bootLoaderImage->FilePath));
+    printf("Boot device     : %s\n", DevicePathToStr(DevicePathFromHandle(bootLoaderImage->DeviceHandle)));
+    printf("Bootloader      : %s\n", DevicePathToStr(bootLoaderImage->FilePath));
 
 
     // Load trampoline
@@ -265,13 +266,13 @@ static EFI_STATUS boot(EFI_HANDLE hImage)
     UINTN mapKey;
     UINTN descriptorSize;
     UINT32 descriptorVersion;
-    Print(L"\nMemoryMap:\n");
+    printf("\nMemoryMap:\n");
 
     EFI_MEMORY_DESCRIPTOR* memoryMap = LibMemoryMap(&descriptorCount, &mapKey, &descriptorSize, &descriptorVersion);
 
     if (!memoryMap)
     {
-        Print(L"Failed to retrieve memory map!\n");
+        printf("Failed to retrieve memory map!\n");
         return EFI_LOAD_ERROR;
     }
 
@@ -332,11 +333,11 @@ static EFI_STATUS boot(EFI_HANDLE hImage)
 
     memory_sanitize(&memoryTable);
 
-    Print(L"    Type      Start             End\n");
+    printf("    Type      Start             End\n");
     for (int i = 0; i != memoryTable.count; ++i)
     {
         MemoryEntry* entry = &memoryTable.entries[i];
-        Print(L"%2d:  %8x  %16lx  %16lx\n", i, entry->type, entry->start, entry->end);
+        printf("%2d:  %8x  %16lx  %16lx\n", i, entry->type, entry->start, entry->end);
     }
 */
 
@@ -351,7 +352,7 @@ EFI_STATUS efi_main(EFI_HANDLE hImage, EFI_SYSTEM_TABLE* systemTable)
 
     console_init(ST->ConOut);
 
-    Print(L"Kiznix EFI Bootloader (" STRINGIZE(ARCH) ")\n\n", (int)sizeof(void*)*8);
+    printf("Kiznix EFI Bootloader (" STRINGIZE(ARCH) ")\n\n", (int)sizeof(void*)*8);
 
     EFI_STATUS status = boot(hImage);
 
@@ -359,7 +360,7 @@ EFI_STATUS efi_main(EFI_HANDLE hImage, EFI_SYSTEM_TABLE* systemTable)
     {
         CHAR16 buffer[64];
         StatusToString(buffer, status);
-        Print(L": %s\n", buffer);
+        printf(": %s\n", buffer);
     }
 
     // Wait for a key press
