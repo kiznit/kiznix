@@ -77,10 +77,7 @@ static void console_init(SIMPLE_TEXT_OUTPUT_INTERFACE* conout)
         }
     }
 
-    if (mode > 0)
-    {
-        conout->SetMode(conout, mode);
-    }
+    conout->SetMode(conout, mode);
 }
 
 
@@ -363,10 +360,8 @@ EFI_STATUS efi_main(EFI_HANDLE hImage, EFI_SYSTEM_TABLE* systemTable)
         printf(": %s\n", buffer);
     }
 
-    // Wait for a key press
-    UINTN index;
-    EFI_EVENT event = ST->ConIn->WaitForKey;
-    ST->BootServices->WaitForEvent(1, &event, &index);
+
+    getchar();
 
     return status;
 }

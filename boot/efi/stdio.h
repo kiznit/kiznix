@@ -34,8 +34,15 @@
 extern "C" {
 #endif
 
+#define EOF (-1)
+
+int getchar();
+
 int printf(const char* format, ...);
 int vprintf(const char* format, va_list args);
+
+int putchar(int c);
+int puts(const char* string);
 
 #ifdef __cplusplus
 }

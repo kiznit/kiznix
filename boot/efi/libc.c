@@ -42,6 +42,35 @@ UINTN _IPrint(
 
 
 
+int getchar()
+{
+    for (;;)
+    {
+        EFI_STATUS status;
+
+        UINTN index;
+        status = ST->BootServices->WaitForEvent(1, &ST->ConIn->WaitForKey, &index);
+        if (EFI_ERROR(status))
+        {
+            return EOF;
+        }
+
+        EFI_INPUT_KEY key;
+        status = ST->ConIn->ReadKeyStroke(ST->ConIn, &key);
+        if (EFI_ERROR(status))
+        {
+            if (status == EFI_NOT_READY)
+                continue;
+
+            return EOF;
+        }
+
+        return key.UnicodeChar;
+    }
+}
+
+
+
 void* memcpy(void* destination, const void* source, size_t count)
 {
     CopyMem(destination, source, count);
@@ -73,12 +102,20 @@ int printf(const char* format, ...)
 
 int vprintf(const char* format, va_list args)
 {
-    if (ST && ST->ConOut)
-    {
-        return _IPrint ((UINTN) -1, (UINTN) -1, ST->ConOut, NULL, (CHAR8*)format, args);
-    }
-    else
-    {
-        return -1;
-    }
+    return _IPrint ((UINTN) -1, (UINTN) -1, ST->ConOut, NULL, (CHAR8*)format, args);
+}
+
+
+
+int putchar(int c)
+{
+    CHAR16 s[2] = { c, 0 };
+    return Print(s) > 0 ? s[0] : EOF;
+}
+
+
+
+int puts(const char* string)
+{
+    return printf("%a\n", string);
 }
