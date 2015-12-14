@@ -24,37 +24,18 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef INCLUDED_EFI_STDIO_H
-#define INCLUDED_EFI_STDIO_H
+#ifndef INCLUDED_EFI_STDLIB_H
+#define INCLUDED_EFI_STDLIB_H
 
-#include <stdarg.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define EOF (-1)
-
-
-typedef struct FILE FILE;
-typedef void* EFI_HANDLE;
-typedef struct _EFI_DEVICE_PATH EFI_DEVICE_PATH;
-
-FILE* _fopen(EFI_HANDLE hDevice, EFI_DEVICE_PATH* path);
-size_t _fsize(FILE* fp);
-
-size_t fread(void* p, size_t size, size_t count, FILE* stream);
-int fclose(FILE* stream);
-
-
-int getchar();
-
-int printf(const char* format, ...);
-int vprintf(const char* format, va_list args);
-
-int putchar(int c);
-int puts(const char* string);
+void* malloc(size_t size);
+void* calloc(size_t num, size_t size);
+void free(void* ptr);
 
 #ifdef __cplusplus
 }

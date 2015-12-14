@@ -29,6 +29,7 @@
 #include <elf.h>
 #include <memory.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define STRINGIZE_DELAY(x) #x
 #define STRINGIZE(x) STRINGIZE_DELAY(x)
@@ -86,30 +87,36 @@ static EFI_STATUS load_elf(EFI_HANDLE hDevice, CHAR16* szPath, elf_info* info)
 {
     ZeroMem(info, sizeof(*info));
 
-    SIMPLE_READ_FILE fp;
     EFI_STATUS status;
-    EFI_DEVICE_PATH* path = FileDevicePath(hDevice, szPath);
 
-    status = OpenSimpleReadFile(FALSE, NULL, 0, &path, &hDevice, &fp);
-    if (EFI_ERROR(status))
+    EFI_DEVICE_PATH* path = FileDevicePath(hDevice, szPath);
+    FILE* fp = _fopen(hDevice, path);
+
+    free(path);
+
+    if (!fp)
     {
         printf("Could not open elf binary: \"%s\"", szPath);
-        return status;
+        return EFI_LOAD_ERROR;
     }
+
 
     printf("Elf image       : %s\n", szPath);
 
-    UINTN elfSize = SizeSimpleReadFile(fp);
-    void* elfImage = AllocatePool(elfSize);
-    UINTN readSize = elfSize;
-    status = ReadSimpleReadFile(fp, 0, &readSize, elfImage);
-    if (EFI_ERROR(status) || readSize != elfSize)
+    size_t elfSize = _fsize(fp);
+    printf("Elf size        : %d\n", elfSize);
+
+    void* elfImage = malloc(elfSize);
+    size_t readSize = fread(elfImage, 1, elfSize, fp);
+
+    fclose(fp);
+
+    if (readSize != elfSize)
     {
         printf("Could not load elf binary: \"%s\"", szPath);
-        return status;
+        return EFI_LOAD_ERROR;
     }
 
-    printf("Elf size        : %d\n", elfSize);
 
     elf_context elf;
     if (!elf_init(&elf, elfImage, elfSize))

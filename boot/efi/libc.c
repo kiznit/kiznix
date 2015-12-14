@@ -41,6 +41,92 @@ UINTN _IPrint(
 );
 
 
+struct FILE
+{
+    SIMPLE_READ_FILE srf;
+    long offset;
+};
+
+
+
+FILE* _fopen(EFI_HANDLE hDevice, EFI_DEVICE_PATH* path)
+{
+    FILE* stream = (FILE*)AllocateZeroPool(sizeof(FILE));
+
+    EFI_STATUS status = OpenSimpleReadFile(FALSE, NULL, 0, &path, &hDevice, &stream->srf);
+    if (EFI_ERROR(status))
+    {
+        FreePool(stream);
+        return NULL;
+    }
+
+    return stream;
+}
+
+
+
+size_t _fsize(FILE* fp)
+{
+    return SizeSimpleReadFile(fp->srf);
+}
+
+
+
+size_t fread(void* p, size_t size, size_t count, FILE* stream)
+{
+    UINTN readSize = size * count;
+
+    if (readSize == 0)
+        return 0;
+
+    EFI_STATUS status = ReadSimpleReadFile(stream->srf, stream->offset, &readSize, p);
+    if (EFI_ERROR(status))
+        return 0;
+
+    stream->offset += readSize;
+
+    return readSize / size;
+}
+
+
+
+int fclose(FILE* stream)
+{
+    if (!stream)
+        return EOF;
+
+    CloseSimpleReadFile(stream->srf);
+
+    stream->srf = NULL;
+    stream->offset = 0;
+
+    FreePool(stream);
+
+    return 0;
+}
+
+
+
+void* malloc(size_t size)
+{
+    return AllocatePool(size);
+}
+
+
+
+void* calloc(size_t num, size_t size)
+{
+    return AllocateZeroPool(num * size);
+}
+
+
+
+void free(void* ptr)
+{
+    FreePool(ptr);
+}
+
+
 
 int getchar()
 {
@@ -67,22 +153,6 @@ int getchar()
 
         return key.UnicodeChar;
     }
-}
-
-
-
-void* memcpy(void* destination, const void* source, size_t count)
-{
-    CopyMem(destination, source, count);
-    return destination;
-}
-
-
-
-void* memset(void* memory, int value, size_t count)
-{
-    SetMem(memory, count, value);
-    return memory;
 }
 
 
@@ -118,4 +188,20 @@ int putchar(int c)
 int puts(const char* string)
 {
     return printf("%a\n", string);
+}
+
+
+
+void* memcpy(void* destination, const void* source, size_t count)
+{
+    CopyMem(destination, source, count);
+    return destination;
+}
+
+
+
+void* memset(void* memory, int value, size_t count)
+{
+    SetMem(memory, count, value);
+    return memory;
 }
