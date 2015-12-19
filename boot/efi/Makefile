@@ -47,14 +47,13 @@ include ../../Makefile.common
 GLOBAL_INCLUDES := \
 	. \
 	../../include \
-	../common \
 	../../third_party/gnu-efi/inc \
 	../../third_party/gnu-efi/inc/$(TARGET_ARCH) \
 	../../third_party/gnu-efi/inc/protocol
 
 DEFINES := HAVE_USE_MS_ABI ARCH=$(TARGET_ARCH)
 
-MODULES := . ../common ../../third_party/gnu-efi
+MODULES := . ../../third_party/gnu-efi
 
 
 $(eval $(call load-modules,$(MODULES)))

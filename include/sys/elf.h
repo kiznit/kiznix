@@ -24,43 +24,86 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef INCLUDED_BOOT_COMMON_ELF_H
-#define INCLUDED_BOOT_COMMON_ELF_H
+#ifndef KIZNIX_INCLUDED_SYS_ELF_H
+#define KIZNIX_INCLUDED_SYS_ELF_H
 
-#include <stddef.h>
 #include <stdint.h>
 
-#define ELF_MAGIC 0x464C457F
-
-#define ELF_CLASS_32 1
-#define ELF_CLASS_64 2
-
-#define ELF_DATA_LITTLE_ENDIAN 1
-#define ELF_DATA_BIG_ENDIAN 2
-
-#define ELF_VERSION_CURRENT 1
 
 
-typedef struct elf_ident
+/*
+    Basic types
+*/
+
+typedef uint32_t Elf32_Addr;
+typedef uint32_t Elf32_Off;
+typedef uint16_t Elf32_Half;
+typedef int32_t  Elf32_Sword;
+typedef uint32_t Elf32_Word;
+
+typedef uint64_t Elf64_Addr;
+typedef uint64_t Elf64_Off;
+typedef uint16_t Elf64_Half;
+typedef uint32_t Elf64_Word;
+typedef int32_t  Elf64_Sword;
+typedef uint64_t Elf64_Xword;
+typedef int64_t  Elf64_Sxword;
+
+
+
+/*
+    Elf header
+*/
+
+#define EI_MAG0 0
+#define EI_MAG1 1
+#define EI_MAG2 2
+#define EI_MAG3 3
+#define EI_CLASS 4
+#define EI_DATA 5
+#define EI_VERSION 6
+#define EI_OSABI 7
+#define EI_ABIVERSION 8
+#define EI_PAD 9
+#define EI_NIDENT 16
+
+#define ELFMAG0 0x7f
+#define ELFMAG1 'E'
+#define ELFMAG2 'L'
+#define ELFMAG3 'F'
+
+#define EV_NONE 0
+#define EV_CURRENT 1
+
+#define ELFCLASSNONE 0
+#define ELFCLASS32 1
+#define ELFCLASS64 2
+
+#define ELFDATANONE 0
+#define ELFDATA2LSB 1
+#define ELFDATA2MSB 2
+
+#define ELFOSABI_SYSV 0
+#define ELFOSABI_HPUX 1
+#define ELFOSABI_STANDALONE 255
+
+#define ET_NONE 0
+#define ET_REL 1
+#define ET_EXEC 2
+#define ET_DYN 3
+#define ET_CORE 4
+#define ET_LOOS 0xfe00
+#define ET_HIOS 0xfeff
+#define ET_LOPROC 0xff00
+#define ET_HIPROC 0xffff
+
+#define EM_NONE 0
+#define EM_386 3
+#define EM_X86_64 62
+
+typedef struct
 {
-    uint32_t    magic;      // File identification
-    uint8_t     class;      // File class
-    uint8_t     data;       // Data encoding
-    uint8_t     version;    // File version
-    uint8_t     pad[9];     // Padding
-} elf_ident;
-
-
-
-#define ELF_ET_EXEC 2
-#define ELF_ET_DYN 3
-
-#define ELF_EM_386 3
-#define ELF_EM_EM_X86_64 62
-
-typedef struct elf_header32
-{
-    elf_ident   e_ident;    // Magic number and other info
+    uint8_t     e_ident[16];// File identification
     uint16_t    e_type;     // Object file type
     uint16_t    e_machine;  // Architecture
     uint32_t    e_version;  // Object file version
@@ -74,11 +117,11 @@ typedef struct elf_header32
     uint16_t    e_shentsize;// Section header table entry size
     uint16_t    e_shnum;    // Section header table entry count
     uint16_t    e_shstrndx; // Section header string table index
-} elf_header32;
+} Elf32_Ehdr;
 
-typedef struct elf_header64
+typedef struct
 {
-    elf_ident   e_ident;    // Magic number and other info
+    uint8_t     e_ident[16];// File identification
     uint16_t    e_type;     // Object file type
     uint16_t    e_machine;  // Architecture
     uint32_t    e_version;  // Object file version
@@ -92,12 +135,23 @@ typedef struct elf_header64
     uint16_t    e_shentsize;// Section header table entry size
     uint16_t    e_shnum;    // Section header table entry count
     uint16_t    e_shstrndx; // Section header string table index
-} elf_header64;
+} Elf64_Ehdr;
 
 
 
+/*
+    Section header
+*/
 
-typedef struct elf_section32
+#define SHN_UNDEF 0
+#define SHN_LOPROC 0xff00
+#define SHN_HIPROC 0xff1f
+#define SHN_LOOS 0xff20
+#define SHN_HIOS 0xff3f
+#define SHN_ABS 0xfff1
+#define SHN_COMMON 0xfff2
+
+typedef struct
 {
     uint32_t    sh_name;        // Section name (string tbl index)
     uint32_t    sh_type;        // Section type
@@ -109,9 +163,9 @@ typedef struct elf_section32
     uint32_t    sh_info;        // Additional section information
     uint32_t    sh_addralign;   // Section alignment
     uint32_t    sh_entsize;     // Entry size if section holds table
-} elf_section32;
+} Elf32_Shdr;
 
-typedef struct elf_section64
+typedef struct
 {
     uint32_t    sh_name;        // Section name (string tbl index)
     uint32_t    sh_type;        // Section type
@@ -123,18 +177,33 @@ typedef struct elf_section64
     uint32_t    sh_info;        // Additional section information
     uint64_t    sh_addralign;   // Section alignment
     uint64_t    sh_entsize;     // Entry size if section holds table
-} elf_section64;
+} Elf64_Shdr;
 
 
 
-#define ELF_PT_LOAD 1
-#define ELF_PT_DYNAMIC 2
+/*
+    Program header
+*/
 
-#define ELF_PF_EXEC 1
-#define ELF_PF_WRITE 2
-#define ELF_PF_READ 4
+#define PT_NULL     0
+#define PT_LOAD     1
+#define PT_DYNAMIC  2
+#define PT_INTERP   3
+#define PT_NOTE     4
+#define PT_SHLIB    5
+#define PT_PHDR     6
+#define PT_LOOS     0x60000000
+#define PT_HIOS     0x6fffffff
+#define PT_LOPROC   0x70000000
+#define PT_HIPROC   0x7fffffff
 
-typedef struct elf_segment32
+#define PF_X        0x1
+#define PF_W        0x2
+#define PF_R        0x4
+#define PF_MASKOS   0x0ff00000
+#define PF_MASKPROC 0xf0000000
+
+typedef struct
 {
     uint32_t    p_type;         // Segment type
     uint32_t    p_offset;       // Segment file offset
@@ -144,9 +213,9 @@ typedef struct elf_segment32
     uint32_t    p_memsz;        // Segment size in memory
     uint32_t    p_flags;        // Segment flags
     uint32_t    p_align;        // Segment alignment
-} elf_segment32;
+} Elf32_Phdr;
 
-typedef struct elf_segment64
+typedef struct
 {
     uint32_t    p_type;         // Segment type
     uint32_t    p_flags;        // Segment flags
@@ -156,15 +225,46 @@ typedef struct elf_segment64
     uint64_t    p_filesz;       // Segment size in file
     uint64_t    p_memsz;        // Segment size in memory
     uint64_t    p_align;        // Segment alignment
-} elf_segment64;
+} Elf64_Phdr;
 
 
+/*
+    Dynamic structure
+*/
 
-#define DT_REL 17
-#define DT_RELSZ 18
-#define DT_RELENT 19
+#define DT_NULL         0
+#define DT_NEEDED       1
+#define DT_PLTRELSZ     2
+#define DT_PLTGOT       3
+#define DT_HASH         4
+#define DT_STRTAB       5
+#define DT_SYMTAB       6
+#define DT_RELA         7
+#define DT_RELASZ       8
+#define DT_RELAENT      9
+#define DT_STRSZ        10
+#define DT_SYMENT       11
+#define DT_INIT         12
+#define DT_FINI         13
+#define DT_SONAME       14
+#define DT_RPATH        15
+#define DT_SYMBOLIC     16
+#define DT_REL          17
+#define DT_RELSZ        18
+#define DT_RELENT       19
+#define DT_PLTREL       20
+#define DT_DEBUG        21
+#define DT_TEXTREL      22
+#define DT_JMPREL       23
+#define DT_BIND_NOW     24
+#define DT_INIT_ARRAY   25
+#define DT_FINI_ARRAY   26
+#define DT_INIT_ARRAYSZ 27
+#define DT_FINI_ARRAYSZ 28
+#define DT_LOOS         0x6000000d
+#define DT_HIOS         0x6ffff000
 
-typedef struct elf_dynamic32
+typedef struct
 {
     int32_t d_tag;
     union
@@ -173,37 +273,19 @@ typedef struct elf_dynamic32
         uint32_t d_ptr;
     } d_un;
 
-} elf_dynamic32;
+} Elf32_Dyn;
 
-
-
-
-typedef struct elf_context
+typedef struct
 {
-    const char*     image;      // Start of elf image in memory
-    size_t          size;       // Size of elf image in memory
-    elf_header32*   header32;   // Header for 32 bits elf files
-    elf_header64*   header64;   // Header for 64 bits elf files
-    uint64_t        entry;      // Entry point (virtual address)
+    int64_t d_tag;
+    union
+    {
+        uint64_t d_val;
+        uint64_t d_ptr;
+    } d_un;
 
-} elf_context;
-
-
-typedef struct elf_segment
-{
-    uint32_t    type;           // Segment type
-    uint32_t    flags;          // Segment flags
-    const char* data;           // Binary image
-    uint64_t    lenData;        // Length of image in file
-    uint64_t    address;        // Virtual address
-    uint64_t    size;           // Length of segment in memory
-    uint64_t    alignment;      // Alignment
-
-} elf_segment;
+} Elf64_Dyn;
 
 
-
-int elf_init(elf_context* context, const char* image, size_t size);
-int elf_read_segment(elf_context* context, int index, elf_segment* segment);
 
 #endif
