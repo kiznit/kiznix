@@ -40,10 +40,8 @@ enum MemoryType
     MemoryType_Reserved,        // Reserved / unknown / do not use
     MemoryType_Unusable,        // Memory in which errors have been detected
     MemoryType_FirmwareRuntime, // Firmware Runtime Memory (e.g. EFI runtime services)
-    MemoryType_ACPIReclaim,     // ACPI Tables (can be reclaimed once parsed)
+    MemoryType_ACPIReclaimable, // ACPI Tables (can be reclaimed once parsed)
     MemoryType_ACPIRuntime,     // ACPI Runtime Memory (e.g. Non-Volatile Storage)
-    MemoryType_Max,
-
 };
 
 
@@ -55,6 +53,8 @@ public:
     MemoryMap();
 
     void AddEntry(MemoryType type, physaddr_t start, physaddr_t end);
+
+    void Print();
 
 
 private:

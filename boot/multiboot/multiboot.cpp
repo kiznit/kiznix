@@ -122,7 +122,7 @@ static void process_multiboot_info(multiboot_info const * const mbi)
                 break;
 
             case MULTIBOOT_MEMORY_ACPI_RECLAIMABLE:
-                type = MemoryType_ACPIReclaim;
+                type = MemoryType_ACPIReclaimable;
                 break;
 
             case MULTIBOOT_MEMORY_NVS:
@@ -208,7 +208,7 @@ static void process_multiboot_info(multiboot2_info const * const mbi)
                 break;
 
             case MULTIBOOT_MEMORY_ACPI_RECLAIMABLE:
-                type = MemoryType_ACPIReclaim;
+                type = MemoryType_ACPIReclaimable;
                 break;
 
             case MULTIBOOT_MEMORY_NVS:
@@ -261,4 +261,6 @@ extern "C" void multiboot_main(unsigned int magic, void* mbi)
     {
         printf("Kiznix boot error: no multiboot information!\n");
     }
+
+    g_memoryMap.Print();
 }

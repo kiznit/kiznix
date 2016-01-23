@@ -25,6 +25,7 @@
 */
 
 #include "memory.hpp"
+#include <stdio.h>
 
 
 MemoryMap::MemoryMap()
@@ -72,6 +73,52 @@ void MemoryMap::AddEntry(MemoryType type, physaddr_t start, physaddr_t end)
     entry->type = type;
     ++m_count;
 }
+
+
+
+void MemoryMap::Print()
+{
+    printf("Memory map:\n");
+    for (int i = 0; i != m_count; ++i)
+    {
+        const MemoryEntry& entry = m_entries[i];
+
+        const char* type = "Unknown";
+
+        switch (entry.type)
+        {
+        case MemoryType_Available:
+            type = "Available";
+            break;
+
+        case MemoryType_Reserved:
+            type = "Reserved";
+            break;
+
+        case MemoryType_Unusable:
+            type = "Unusable";
+            break;
+
+        case MemoryType_FirmwareRuntime:
+            type = "Firmware Runtime";
+            break;
+
+        case MemoryType_ACPIReclaimable:
+            type = "ACPI Reclaimable";
+            break;
+
+        case MemoryType_ACPIRuntime:
+            type = "ACPI Runtime";
+            break;
+        }
+
+        printf("    %08x%08x - %08x%08x : %s\n",
+            (unsigned)(entry.start >> 32), (unsigned)(entry.start & 0xFFFFFFFF),
+            (unsigned)(entry.end >> 32), (unsigned)(entry.end & 0xFFFFFFFF),
+            type);
+    }
+}
+
 
 
 
