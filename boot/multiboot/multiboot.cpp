@@ -34,11 +34,14 @@
 #include "multiboot2.h"
 
 #include "memory.hpp"
+#include "module.hpp"
+
 
 // Placement new
 void* operator new(size_t, void* where) { return where; }
 
 static MemoryMap g_memoryMap;
+static Modules g_modules;
 
 
 
@@ -148,14 +151,12 @@ static void process_multiboot_info(multiboot_info const * const mbi)
 
     if (mbi->flags & MULTIBOOT_INFO_MODS)
     {
-        printf("\nModules:\n");
-
         const multiboot_module* modules = (multiboot_module*)mbi->mods_addr;
 
         for (uint32_t i = 0; i != mbi->mods_count; ++i)
         {
             const multiboot_module* module = &modules[i];
-            printf("    %lu: %08lx - %08lx (%ld bytes) - \"%s\"\n", i, module->mod_start, module->mod_end, module->mod_end - module->mod_start, module->string);
+            g_modules.AddModule(module->string, module->mod_start, module->mod_end);
         }
     }
 }
@@ -183,7 +184,7 @@ static void process_multiboot_info(multiboot2_info const * const mbi)
 
         case MULTIBOOT2_TAG_TYPE_MODULE:
             const multiboot2_module* module = (multiboot2_module*)tag;
-            printf("    module: %08lx - %08lx (%ld bytes) - \"%s\"\n", module->mod_start, module->mod_end, module->mod_end - module->mod_start, module->string);
+            g_modules.AddModule(module->string, module->mod_start, module->mod_end);
             break;
         }
     }
@@ -240,6 +241,7 @@ extern "C" void multiboot_main(unsigned int magic, void* mbi)
     console_init();
 
     new (&g_memoryMap) MemoryMap();
+    new (&g_modules) Modules();
 
     printf("Kiznix Multiboot Bootloader\n\n");
 
@@ -262,5 +264,8 @@ extern "C" void multiboot_main(unsigned int magic, void* mbi)
         printf("Kiznix boot error: no multiboot information!\n");
     }
 
+    putchar('\n');
     g_memoryMap.Print();
+    putchar('\n');
+    g_modules.Print();
 }

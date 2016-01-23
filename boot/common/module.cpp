@@ -24,58 +24,49 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef INCLUDED_BOOT_COMMON_MEMORY_HPP
-#define INCLUDED_BOOT_COMMON_MEMORY_HPP
+#include "module.hpp"
+#include <stdio.h>
+#include <string.h>
 
-#include <sys/types.h>
-
-
-#define MEMORY_MAX_ENTRIES 1024
-
-
-
-enum MemoryType
+Modules::Modules()
 {
-    MemoryType_Available,       // Available memory (RAM)
-    MemoryType_Reserved,        // Reserved / unknown / do not use
-    MemoryType_Unusable,        // Memory in which errors have been detected
-    MemoryType_FirmwareRuntime, // Firmware Runtime Memory (e.g. EFI runtime services)
-    MemoryType_ACPIReclaimable, // ACPI Tables (can be reclaimed once parsed)
-    MemoryType_ACPIRuntime,     // ACPI Runtime Memory (e.g. Non-Volatile Storage)
-};
+    m_count = 0;
+}
 
 
 
-struct MemoryEntry
+void Modules::AddModule(const char* name, physaddr_t start, physaddr_t end)
 {
-    physaddr_t start;   // Start of memory range
-    physaddr_t end;     // End of memory range
-    MemoryType type;    // Type of memory
-};
+    // Ignore invalid entries (including zero-sized ones)
+    if (start >= end)
+        return;
+
+    // If the table is full, we can't add more entries
+    if (m_count == MODULE_MAX_ENTRIES)
+        return;
+
+    // Insert this new entry
+    ModuleInfo* module = &m_modules[m_count];
+    module->start = start;
+    module->end = end;
+    strncpy(module->name, name, MODULE_MAX_NAME_LENGTH-1);
+    module->name[MODULE_MAX_NAME_LENGTH-1] = '\0';
+    ++m_count;
+}
 
 
 
-class MemoryMap
+void Modules::Print()
 {
-public:
+    printf("Modules:\n");
 
-    MemoryMap();
+    for (int i = 0; i != m_count; ++i)
+    {
+        const ModuleInfo& module = m_modules[i];
 
-    void AddEntry(MemoryType type, physaddr_t start, physaddr_t end);
-
-    void Print();
-
-
-private:
-
-    MemoryEntry  m_entries[MEMORY_MAX_ENTRIES]; // Memory entries
-    int          m_count;                       // Memory entry count
-};
-
-/*
-void memory_sanitize(MemoryTable* table);
-*/
-
-
-
-#endif
+        printf("    %08x%08x - %08x%08x : %s\n",
+            (unsigned)(module.start >> 32), (unsigned)(module.start & 0xFFFFFFFF),
+            (unsigned)(module.end >> 32), (unsigned)(module.end & 0xFFFFFFFF),
+            module.name);
+    }
+}

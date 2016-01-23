@@ -33,11 +33,15 @@ extern "C" {
 }
 
 #include "memory.hpp"
+#include "module.hpp"
+
 
 // Placement new
 void* operator new(size_t, void* where) { return where; }
 
 static MemoryMap g_memoryMap;
+static Modules g_modules;
+
 
 #define STRINGIZE_DELAY(x) #x
 #define STRINGIZE(x) STRINGIZE_DELAY(x)
@@ -191,6 +195,7 @@ extern "C" EFI_STATUS efi_main(EFI_HANDLE hImage, EFI_SYSTEM_TABLE* systemTable)
     console_init(ST->ConOut);
 
     new (&g_memoryMap) MemoryMap();
+    new (&g_modules) Modules();
 
     printf("Kiznix EFI Bootloader (" STRINGIZE(ARCH) ")\n\n", (int)sizeof(void*)*8);
 

@@ -79,6 +79,7 @@ void MemoryMap::AddEntry(MemoryType type, physaddr_t start, physaddr_t end)
 void MemoryMap::Print()
 {
     printf("Memory map:\n");
+
     for (int i = 0; i != m_count; ++i)
     {
         const MemoryEntry& entry = m_entries[i];
@@ -108,7 +109,7 @@ void MemoryMap::Print()
             break;
 
         case MemoryType_ACPIRuntime:
-            type = "ACPI Runtime";
+            type = "ACPI Runtime (NVS)";
             break;
         }
 

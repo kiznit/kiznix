@@ -36,6 +36,8 @@ extern "C" {
 void* memcpy(void* destination, const void* source, size_t count);
 void* memset(void* memory, int value, size_t count);
 
+char* strncpy(char* destination, const char* source, size_t count);
+
 #ifdef __cplusplus
 }
 #endif

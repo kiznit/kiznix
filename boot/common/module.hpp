@@ -24,58 +24,41 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef INCLUDED_BOOT_COMMON_MEMORY_HPP
-#define INCLUDED_BOOT_COMMON_MEMORY_HPP
+#ifndef INCLUDED_BOOT_COMMON_MODULE_HPP
+#define INCLUDED_BOOT_COMMON_MODULE_HPP
 
 #include <sys/types.h>
 
 
-#define MEMORY_MAX_ENTRIES 1024
+#define MODULE_MAX_ENTRIES 128
+#define MODULE_MAX_NAME_LENGTH 64
 
 
-
-enum MemoryType
+struct ModuleInfo
 {
-    MemoryType_Available,       // Available memory (RAM)
-    MemoryType_Reserved,        // Reserved / unknown / do not use
-    MemoryType_Unusable,        // Memory in which errors have been detected
-    MemoryType_FirmwareRuntime, // Firmware Runtime Memory (e.g. EFI runtime services)
-    MemoryType_ACPIReclaimable, // ACPI Tables (can be reclaimed once parsed)
-    MemoryType_ACPIRuntime,     // ACPI Runtime Memory (e.g. Non-Volatile Storage)
+    physaddr_t  start;
+    physaddr_t  end;
+    char        name[MODULE_MAX_NAME_LENGTH];
 };
 
 
 
-struct MemoryEntry
-{
-    physaddr_t start;   // Start of memory range
-    physaddr_t end;     // End of memory range
-    MemoryType type;    // Type of memory
-};
-
-
-
-class MemoryMap
+class Modules
 {
 public:
 
-    MemoryMap();
+    Modules();
 
-    void AddEntry(MemoryType type, physaddr_t start, physaddr_t end);
+    void AddModule(const char* name, physaddr_t start, physaddr_t end);
 
     void Print();
 
 
 private:
 
-    MemoryEntry  m_entries[MEMORY_MAX_ENTRIES]; // Memory entries
-    int          m_count;                       // Memory entry count
+    ModuleInfo  m_modules[MODULE_MAX_ENTRIES];  // Modules
+    int         m_count;                        // Module count
 };
-
-/*
-void memory_sanitize(MemoryTable* table);
-*/
-
 
 
 #endif
