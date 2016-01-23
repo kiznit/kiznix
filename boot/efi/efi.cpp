@@ -116,12 +116,11 @@ static EFI_STATUS boot(EFI_HANDLE hImage)
     }
 */
 
-/*
+
     UINTN descriptorCount;
     UINTN mapKey;
     UINTN descriptorSize;
     UINT32 descriptorVersion;
-    printf("\nMemoryMap:\n");
 
     EFI_MEMORY_DESCRIPTOR* memoryMap = LibMemoryMap(&descriptorCount, &mapKey, &descriptorSize, &descriptorVersion);
 
@@ -131,70 +130,54 @@ static EFI_STATUS boot(EFI_HANDLE hImage)
         return EFI_LOAD_ERROR;
     }
 
-
-    MemoryTable memoryTable;
-    memory_init(&memoryTable);
-
     EFI_MEMORY_DESCRIPTOR* descriptor = memoryMap;
     for (UINTN i = 0; i != descriptorCount; ++i, descriptor = NextMemoryDescriptor(descriptor, descriptorSize))
     {
-        MemoryType type;
+        MemoryType type = MemoryType_Reserved;
 
         switch (descriptor->Type)
         {
-            case EfiUnusableMemory:
-                type = MemoryType_Unusable;
-                break;
+        case EfiUnusableMemory:
+            type = MemoryType_Unusable;
+            break;
 
-            case EfiLoaderCode:
-            case EfiLoaderData:
-            case EfiBootServicesCode:
-            case EfiBootServicesData:
-            case EfiConventionalMemory:
-                if (descriptor->Attribute & EFI_MEMORY_WB)
-                    type = MemoryType_Available;
-                else
-                    type = MemoryType_Reserved;
-                break;
-
-            case EfiRuntimeServicesCode:
-            case EfiRuntimeServicesData:
-                type = MemoryType_FirmwareRuntime;
-                break;
-
-            case EfiACPIReclaimMemory:
-                type = MemoryType_ACPIReclaim;
-                break;
-
-            case EfiACPIMemoryNVS:
-                type = MemoryType_ACPIRuntime;
-                break;
-
-            case EfiReservedMemoryType:
-            case EfiMemoryMappedIO:
-            case EfiMemoryMappedIOPortSpace:
-            case EfiPalCode:
-            default:
+        case EfiLoaderCode:
+        case EfiLoaderData:
+        case EfiBootServicesCode:
+        case EfiBootServicesData:
+        case EfiConventionalMemory:
+            if (descriptor->Attribute & EFI_MEMORY_WB)
+                type = MemoryType_Available;
+            else
                 type = MemoryType_Reserved;
-                break;
-        }
+            break;
 
+        case EfiRuntimeServicesCode:
+        case EfiRuntimeServicesData:
+            type = MemoryType_FirmwareRuntime;
+            break;
+
+        case EfiACPIReclaimMemory:
+            type = MemoryType_ACPIReclaimable;
+            break;
+
+        case EfiACPIMemoryNVS:
+            type = MemoryType_ACPIRuntime;
+            break;
+
+        case EfiReservedMemoryType:
+        case EfiMemoryMappedIO:
+        case EfiMemoryMappedIOPortSpace:
+        case EfiPalCode:
+            type = MemoryType_Reserved;
+            break;
+        }
 
         uint64_t start = descriptor->PhysicalStart;
         uint64_t end = start + descriptor->NumberOfPages * EFI_PAGE_SIZE;
 
-        memory_add_entry(&memoryTable, start, end, type);
+        g_memoryMap.AddEntry(type, start, end);
     }
-
-    memory_sanitize(&memoryTable);
-
-    printf("    Type      Start             End\n");
-    for (int i = 0; i != memoryTable.count; ++i)
-    {
-        MemoryEntry* entry = &memoryTable.entries[i];
-        printf("%2d:  %8x  %16lx  %16lx\n", i, entry->type, entry->start, entry->end);
-    }
-*/
 
     return EFI_SUCCESS;
 }
@@ -218,9 +201,12 @@ extern "C" EFI_STATUS efi_main(EFI_HANDLE hImage, EFI_SYSTEM_TABLE* systemTable)
         CHAR16 buffer[64];
         StatusToString(buffer, status);
         printf(": %s\n", buffer);
+        goto exit;
     }
 
+    g_memoryMap.Print();
 
+exit:
     getchar();
 
     return status;
