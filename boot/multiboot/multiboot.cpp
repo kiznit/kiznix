@@ -236,6 +236,18 @@ static void process_multiboot_info(multiboot2_info const * const mbi)
 
 
 
+static void boot(int multibootVersion)
+{
+    printf("Bootloader      : Multiboot %d\n", multibootVersion);
+
+    putchar('\n');
+    g_memoryMap.Print();
+    putchar('\n');
+    g_modules.Print();
+}
+
+
+
 extern "C" void multiboot_main(unsigned int magic, void* mbi)
 {
     console_init();
@@ -251,21 +263,16 @@ extern "C" void multiboot_main(unsigned int magic, void* mbi)
     }
     else if (magic == MULTIBOOT_BOOTLOADER_MAGIC && mbi)
     {
-        printf("This is multiboot 1\n");
         process_multiboot_info(static_cast<multiboot_info*>(mbi));
+        boot(1);
     }
-    else if (magic == MULTIBOOT2_BOOTLOADER_MAGIC && mbi)
+    else if (magic== MULTIBOOT2_BOOTLOADER_MAGIC && mbi)
     {
-        printf("This is multiboot 2\n");
         process_multiboot_info(static_cast<multiboot2_info*>(mbi));
+        boot(2);
     }
     else
     {
-        printf("Kiznix boot error: no multiboot information!\n");
+        printf("No multiboot information!\n");
     }
-
-    putchar('\n');
-    g_memoryMap.Print();
-    putchar('\n');
-    g_modules.Print();
 }
