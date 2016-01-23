@@ -26,9 +26,9 @@ TARGET_ARCH := ia32
 
 include ../../Makefile.common
 
-GLOBAL_INCLUDES := ../../include ../../libc/include
+GLOBAL_INCLUDES := ../../include ../common ../../libc/include
 
-MODULES := . ../../libc
+MODULES := . ../common ../../libc
 
 $(eval $(call load-modules,$(MODULES)))
 

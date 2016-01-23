@@ -33,6 +33,14 @@
 #include "multiboot.h"
 #include "multiboot2.h"
 
+#include "memory.hpp"
+
+// Placement new
+void* operator new(size_t, void* where) { return where; }
+
+static MemoryMap g_memoryMap;
+
+
 
 extern "C" void __kiznix_putc(unsigned char c)
 {
@@ -92,42 +100,50 @@ static bool verify_cpu()
 
 
 
-
-static void add_memory(int type, uint64_t address, uint64_t length)
-{
-    unsigned int s0 = address >> 32;
-    unsigned int s1 = address & 0xFFFFFFFF;
-    unsigned int e0 = (address + length) >> 32;
-    unsigned int e1 = (address + length) & 0xFFFFFFFF;
-
-    double size = length / (1024.0 * 1024.0);
-
-    printf("    %d: %08x%08x - %08x%08x (%.2f MB)\n", type, s0, s1, e0, e1, size);
-}
-
-
-
 static void process_multiboot_info(multiboot_info const * const mbi)
 {
     if (mbi->flags & MULTIBOOT_MEMORY_INFO)
     {
-        printf("\nMemory map:\n");
-
         const multiboot_mmap_entry* entry = (multiboot_mmap_entry*)mbi->mmap_addr;
         const multiboot_mmap_entry* end = (multiboot_mmap_entry*)(mbi->mmap_addr + mbi->mmap_length);
 
         while (entry < end)
         {
-            add_memory(entry->type, entry->addr, entry->len);
+            MemoryType type = MemoryType_Reserved;
+
+            switch (entry->type)
+            {
+            case MULTIBOOT_MEMORY_AVAILABLE:
+                type = MemoryType_Available;
+                break;
+
+            case MULTIBOOT_MEMORY_RESERVED:
+                type = MemoryType_Reserved;
+                break;
+
+            case MULTIBOOT_MEMORY_ACPI_RECLAIMABLE:
+                type = MemoryType_ACPIReclaim;
+                break;
+
+            case MULTIBOOT_MEMORY_NVS:
+                type = MemoryType_ACPIRuntime;
+                break;
+
+            case MULTIBOOT_MEMORY_BADRAM:
+                type = MemoryType_Unusable;
+                break;
+            }
+
+            g_memoryMap.AddEntry(type, entry->addr, entry->addr + entry->len);
+
+            // Go to next entry
             entry = (multiboot_mmap_entry*) ((uintptr_t)entry + entry->size + sizeof(entry->size));
         }
     }
-
-    if (mbi->flags & MULTIBOOT_INFO_MEMORY)
+    else if (mbi->flags & MULTIBOOT_INFO_MEMORY)
     {
-        printf("\nBasic memory info:\n");
-        add_memory(MULTIBOOT_MEMORY_AVAILABLE, 0, mbi->mem_lower * 1024);
-        add_memory(MULTIBOOT_MEMORY_AVAILABLE, 1024*1024, mbi->mem_upper * 1024);
+        g_memoryMap.AddEntry(MemoryType_Available, 0, mbi->mem_lower * 1024);
+        g_memoryMap.AddEntry(MemoryType_Available, 1024*1024, mbi->mem_upper * 1024);
     }
 
     if (mbi->flags & MULTIBOOT_INFO_MODS)
@@ -174,25 +190,46 @@ static void process_multiboot_info(multiboot2_info const * const mbi)
 
     if (mmap)
     {
-        printf("\nMemory map:\n");
-
         const multiboot2_mmap_entry* entry = mmap->entries;
         const multiboot2_mmap_entry* end = (multiboot2_mmap_entry*) (((uintptr_t)mmap + mmap->size + MULTIBOOT2_TAG_ALIGN - 1) & ~(MULTIBOOT2_TAG_ALIGN - 1));
 
         while (entry < end)
         {
-            add_memory(entry->type, entry->addr, entry->len);
+            MemoryType type = MemoryType_Reserved;
+
+            switch (entry->type)
+            {
+            case MULTIBOOT_MEMORY_AVAILABLE:
+                type = MemoryType_Available;
+                break;
+
+            case MULTIBOOT_MEMORY_RESERVED:
+                type = MemoryType_Reserved;
+                break;
+
+            case MULTIBOOT_MEMORY_ACPI_RECLAIMABLE:
+                type = MemoryType_ACPIReclaim;
+                break;
+
+            case MULTIBOOT_MEMORY_NVS:
+                type = MemoryType_ACPIRuntime;
+                break;
+
+            case MULTIBOOT_MEMORY_BADRAM:
+                type = MemoryType_Unusable;
+                break;
+            }
+
+            g_memoryMap.AddEntry(type, entry->addr, entry->addr + entry->len);
+
+            // Go to next entry
             entry = (multiboot2_mmap_entry*) ((uintptr_t)entry + mmap->entry_size);
         }
     }
-
-
-    if (meminfo)
+    else if (meminfo)
     {
-        printf("\nBasic memory info:\n");
-
-        add_memory(MULTIBOOT_MEMORY_AVAILABLE, 0, meminfo->mem_lower * 1024);
-        add_memory(MULTIBOOT_MEMORY_AVAILABLE, 1024*1024, meminfo->mem_upper * 1024);
+        g_memoryMap.AddEntry(MemoryType_Available, 0, meminfo->mem_lower * 1024);
+        g_memoryMap.AddEntry(MemoryType_Available, 1024*1024, meminfo->mem_upper * 1024);
     }
 }
 
@@ -201,6 +238,8 @@ static void process_multiboot_info(multiboot2_info const * const mbi)
 extern "C" void multiboot_main(unsigned int magic, void* mbi)
 {
     console_init();
+
+    new (&g_memoryMap) MemoryMap();
 
     printf("Kiznix Multiboot Bootloader\n\n");
 
@@ -211,12 +250,12 @@ extern "C" void multiboot_main(unsigned int magic, void* mbi)
     else if (magic == MULTIBOOT_BOOTLOADER_MAGIC && mbi)
     {
         printf("This is multiboot 1\n");
-        process_multiboot_info((multiboot_info*)mbi);
+        process_multiboot_info(static_cast<multiboot_info*>(mbi));
     }
     else if (magic == MULTIBOOT2_BOOTLOADER_MAGIC && mbi)
     {
         printf("This is multiboot 2\n");
-        process_multiboot_info((multiboot2_info*)mbi);
+        process_multiboot_info(static_cast<multiboot2_info*>(mbi));
     }
     else
     {

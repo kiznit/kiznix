@@ -24,26 +24,26 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "memory.h"
+#include "memory.hpp"
 
 
-void memory_init(MemoryTable* table)
+MemoryMap::MemoryMap()
 {
-    table->count = 0;
+    m_count = 0;
 }
 
 
 
-void memory_add_entry(MemoryTable* table, physaddr_t start, physaddr_t end, MemoryType type)
+void MemoryMap::AddEntry(MemoryType type, physaddr_t start, physaddr_t end)
 {
-    // Ignore invalid entries
+    // Ignore invalid entries (including zero-sized ones)
     if (start >= end)
         return;
 
     // Check if we can merge this new range with an existing entry
-    for (int i = 0; i != table->count; ++i)
+    for (int i = 0; i != m_count; ++i)
     {
-        MemoryEntry* entry = &table->entries[i];
+        MemoryEntry* entry = &m_entries[i];
 
         if (type != entry->type)
             continue;
@@ -62,19 +62,20 @@ void memory_add_entry(MemoryTable* table, physaddr_t start, physaddr_t end, Memo
     }
 
     // If the table is full, we can't add more entries
-    if (table->count == MEMORY_MAX_ENTRIES)
+    if (m_count == MEMORY_MAX_ENTRIES)
         return;
 
     // Insert this new entry
-    MemoryEntry* entry = &table->entries[table->count];
+    MemoryEntry* entry = &m_entries[m_count];
     entry->start = start;
     entry->end = end;
     entry->type = type;
-    ++table->count;
+    ++m_count;
 }
 
 
 
+/*
 void memory_sanitize(MemoryTable* table)
 {
     (void)table;
@@ -122,3 +123,4 @@ void memory_sanitize(MemoryTable* table)
         memory_add_entry(table, start, end, type);
     }
 }
+*/

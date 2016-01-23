@@ -24,14 +24,17 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef INCLUDED_BOOT_COMMON_MEMORY_H
-#define INCLUDED_BOOT_COMMON_MEMORY_H
+#ifndef INCLUDED_BOOT_COMMON_MEMORY_HPP
+#define INCLUDED_BOOT_COMMON_MEMORY_HPP
 
-#include <stdint.h>
+#include <sys/types.h>
 
-typedef uint64_t physaddr_t;
 
-typedef enum MemoryType
+#define MEMORY_MAX_ENTRIES 1024
+
+
+
+enum MemoryType
 {
     MemoryType_Available,       // Available memory (RAM)
     MemoryType_Reserved,        // Reserved / unknown / do not use
@@ -41,32 +44,36 @@ typedef enum MemoryType
     MemoryType_ACPIRuntime,     // ACPI Runtime Memory (e.g. Non-Volatile Storage)
     MemoryType_Max,
 
-} MemoryType;
+};
 
 
-typedef struct MemoryEntry
+
+class MemoryMap
 {
-    physaddr_t start;       // Start of memory range
-    physaddr_t end;         // End of memory range
-    MemoryType type;        // Type of memory
+public:
 
-} MemoryEntry;
+    MemoryMap();
 
-
-#define MEMORY_MAX_ENTRIES 1024
-
-typedef struct MemoryTable
-{
-    MemoryEntry entries[MEMORY_MAX_ENTRIES];    // Memory entries
-    int         count;                          // Memory entry count
-
-} MemoryTable;
+    void AddEntry(MemoryType type, physaddr_t start, physaddr_t end);
 
 
-void memory_init(MemoryTable* table);
-void memory_add_entry(MemoryTable* table, physaddr_t start, physaddr_t end, MemoryType type);
+private:
+
+    struct MemoryEntry
+    {
+        physaddr_t start;   // Start of memory range
+        physaddr_t end;     // End of memory range
+        MemoryType type;    // Type of memory
+    };
+
+    MemoryEntry  m_entries[MEMORY_MAX_ENTRIES]; // Memory entries
+    int          m_count;                       // Memory entry count
+};
+
+/*
 void memory_sanitize(MemoryTable* table);
+*/
+
 
 
 #endif
-

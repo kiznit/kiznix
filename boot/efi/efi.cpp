@@ -24,10 +24,20 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <efi.h>
-#include <efilib.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+extern "C" {
+#include <efi.h>
+#include <efilib.h>
+}
+
+#include "memory.hpp"
+
+// Placement new
+void* operator new(size_t, void* where) { return where; }
+
+static MemoryMap g_memoryMap;
 
 #define STRINGIZE_DELAY(x) #x
 #define STRINGIZE(x) STRINGIZE_DELAY(x)
@@ -191,11 +201,13 @@ static EFI_STATUS boot(EFI_HANDLE hImage)
 
 
 
-EFI_STATUS efi_main(EFI_HANDLE hImage, EFI_SYSTEM_TABLE* systemTable)
+extern "C" EFI_STATUS efi_main(EFI_HANDLE hImage, EFI_SYSTEM_TABLE* systemTable)
 {
     InitializeLib(hImage, systemTable);
 
     console_init(ST->ConOut);
+
+    new (&g_memoryMap) MemoryMap();
 
     printf("Kiznix EFI Bootloader (" STRINGIZE(ARCH) ")\n\n", (int)sizeof(void*)*8);
 
