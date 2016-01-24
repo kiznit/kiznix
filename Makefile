@@ -121,6 +121,10 @@ efi-image: efi_ia32 efi_x86_64 trampoline_ia32 kernel_ia32 kernel_x86_64
 	cp $(BUILDDIR)/ia32/trampoline/bin/trampoline $(BUILDDIR)/efi-image/kiznix/trampoline
 	cp $(BUILDDIR)/ia32/kernel/bin/kernel $(BUILDDIR)/efi-image/kiznix/kernel_ia32
 	cp $(BUILDDIR)/x86_64/kernel/bin/kernel $(BUILDDIR)/efi-image/kiznix/kernel_x86_64
+	mkdir -p $(BINDIR)
+	dd if=/dev/zero of=$(BINDIR)/kiznix-uefi.img bs=1M count=33
+	mkfs.vfat $(BINDIR)/kiznix-uefi.img -F32
+	mcopy -s -i $(BINDIR)/kiznix-uefi.img $(BUILDDIR)/efi-image/* ::
 
 
 
@@ -138,11 +142,11 @@ run-bios-64: bios-image
 
 .PHONY: run-efi-32
 run-efi-32: efi-image
-	qemu-system-i386 $(QEMUFLAGS) -bios bios/OVMF-ia32.fd -hda fat:$(BUILDDIR)/efi-image
+	qemu-system-i386 $(QEMUFLAGS) -bios bios/OVMF-ia32.fd $(BINDIR)/kiznix-uefi.img
 
 .PHONY: run-efi-64
 run-efi-64: efi-image
-	qemu-system-x86_64 $(QEMUFLAGS) -bios bios/OVMF-x64.fd -hda fat:$(BUILDDIR)/efi-image
+	qemu-system-x86_64 $(QEMUFLAGS) -bios bios/OVMF-x64.fd $(BINDIR)/kiznix-uefi.img
 
 .PHONY: run-bochs
 run-bochs: bios-image
