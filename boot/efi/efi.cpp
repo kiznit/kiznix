@@ -47,7 +47,7 @@ static Modules g_modules;
 #define STRINGIZE(x) STRINGIZE_DELAY(x)
 
 
-static void console_init(SIMPLE_TEXT_OUTPUT_INTERFACE* conout)
+static void InitConsole(SIMPLE_TEXT_OUTPUT_INTERFACE* conout)
 {
     // Mode 0 is 80x25 text mode and always supported
     // Mode 1 is 80x50 text mode and not always supported
@@ -82,44 +82,9 @@ static void console_init(SIMPLE_TEXT_OUTPUT_INTERFACE* conout)
 
 
 
-static EFI_STATUS boot(EFI_HANDLE hImage)
+static EFI_STATUS BuildMemoryMap()
 {
-    EFI_STATUS status;
-    EFI_LOADED_IMAGE* bootLoaderImage = NULL;
-
-    // Get bootloader image information to get at the boot device
-    status = BS->OpenProtocol(hImage, &LoadedImageProtocol, (void**)&bootLoaderImage,
-                              hImage, NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
-    if (EFI_ERROR(status))
-    {
-        printf("Could not open loaded image protocol");
-        return status;
-    }
-
-    printf("Boot device     : %s\n", DevicePathToStr(DevicePathFromHandle(bootLoaderImage->DeviceHandle)));
-    printf("Bootloader      : %s\n", DevicePathToStr(bootLoaderImage->FilePath));
-
-/*
-    // Load trampoline
-    CHAR16 szTrampolinePath[] = L"\\kiznix\\trampoline";
-    elf_info trampolineInfo;
-    status = load_elf(bootLoaderImage->DeviceHandle, szTrampolinePath, &trampolineInfo);
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
-*/
-/*
-    // Load the right kernel for the current architecture
-    CHAR16 szKernelPath[] = L"\\kiznix\\kernel_" STRINGIZE(ARCH);
-    elf_info kernelInfo;
-    status = load_elf(bootLoaderImage->DeviceHandle, szKernelPath, &kernelInfo);
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
-*/
-
+    new (&g_memoryMap) MemoryMap();
 
     UINTN descriptorCount;
     UINTN mapKey;
@@ -188,30 +153,124 @@ static EFI_STATUS boot(EFI_HANDLE hImage)
 
 
 
+static EFI_STATUS LoadModule(EFI_HANDLE hDevice, const wchar_t* szPath, const char* name)
+{
+    EFI_DEVICE_PATH* path = FileDevicePath(hDevice, (CHAR16*)szPath);
+    if (!path)
+        return EFI_LOAD_ERROR;
+
+    SIMPLE_READ_FILE fp;
+    EFI_STATUS status = OpenSimpleReadFile(FALSE, NULL, 0, &path, &hDevice, &fp);
+    if (EFI_ERROR(status))
+    {
+        Print((CHAR16*)L"Could not open module file \"%s\"\n", szPath);
+        return status;
+    }
+
+    UINTN fileSize = SizeSimpleReadFile(fp);
+    void* fileData = AllocatePool(fileSize);
+    UINTN readSize = fileSize;
+    status = ReadSimpleReadFile(fp, 0, &readSize, fileData);
+    if (EFI_ERROR(status) || readSize != fileSize)
+    {
+        Print((CHAR16*)L"Could not read module file \"%s\"\n", szPath);
+        return EFI_LOAD_ERROR;
+    }
+
+    const physaddr_t start = (uintptr_t) fileData;
+    const physaddr_t end = start + readSize;
+
+    g_modules.AddModule(name, start, end);
+
+    return EFI_SUCCESS;
+}
+
+
+
+static EFI_STATUS LoadModules(EFI_HANDLE hDevice)
+{
+    new (&g_modules) Modules();
+
+    EFI_STATUS status;
+
+    status = LoadModule(hDevice, L"\\kiznix\\trampoline", "/kiznix/trampoline");
+    if (EFI_ERROR(status))
+        return status;
+
+#if defined(__i386__) || defined(__x86_64__)
+    status = LoadModule(hDevice, L"\\kiznix\\kernel_ia32", "/kiznix/kernel_ia32");
+    if (EFI_ERROR(status))
+        return status;
+
+    status = LoadModule(hDevice, L"\\kiznix\\kernel_x86_64", "/kiznix/kernel_x86_64");
+    if (EFI_ERROR(status))
+        return status;
+#endif
+
+    return EFI_SUCCESS;
+}
+
+
+static EFI_STATUS Boot(EFI_HANDLE hImage)
+{
+    EFI_STATUS status;
+    EFI_LOADED_IMAGE* bootLoaderImage = NULL;
+
+    // Get bootloader image information to get at the boot device
+    status = BS->OpenProtocol(hImage, &LoadedImageProtocol, (void**)&bootLoaderImage,
+                              hImage, NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+    if (EFI_ERROR(status))
+    {
+        printf("Could not open loaded image protocol");
+        return status;
+    }
+
+    printf("Boot device     : %s\n", DevicePathToStr(DevicePathFromHandle(bootLoaderImage->DeviceHandle)));
+    printf("Bootloader      : %s\n", DevicePathToStr(bootLoaderImage->FilePath));
+
+    status = BuildMemoryMap();
+    if (EFI_ERROR(status))
+    {
+        printf("Could not retrieve memory map");
+        return status;
+    }
+
+    status = LoadModules(bootLoaderImage->DeviceHandle);
+    if (EFI_ERROR(status))
+    {
+        printf("Could not load modules");
+        return status;
+    }
+
+    return EFI_SUCCESS;
+}
+
+
+
 extern "C" EFI_STATUS efi_main(EFI_HANDLE hImage, EFI_SYSTEM_TABLE* systemTable)
 {
     InitializeLib(hImage, systemTable);
 
-    console_init(ST->ConOut);
-
-    new (&g_memoryMap) MemoryMap();
-    new (&g_modules) Modules();
+    InitConsole(ST->ConOut);
 
     printf("Kiznix EFI Bootloader (" STRINGIZE(ARCH) ")\n\n", (int)sizeof(void*)*8);
 
-    EFI_STATUS status = boot(hImage);
+    EFI_STATUS status = Boot(hImage);
 
     if (EFI_ERROR(status))
     {
         CHAR16 buffer[64];
         StatusToString(buffer, status);
         printf(": %s\n", buffer);
-        goto exit;
+    }
+    else
+    {
+        putchar('\n');
+        g_memoryMap.Print();
+        putchar('\n');
+        g_modules.Print();
     }
 
-    g_memoryMap.Print();
-
-exit:
     getchar();
 
     return status;

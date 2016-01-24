@@ -82,7 +82,7 @@ struct multiboot2_module
 // i686 = P6 (Pentium Pro)
 // Reference:
 //  https://en.m.wikipedia.org/wiki/P6_(microarchitecture)
-static bool verify_cpu()
+static bool VerifyCPU()
 {
     unsigned int maxLevel = __get_cpuid_max(0, NULL);
     if (maxLevel == 0)
@@ -103,7 +103,7 @@ static bool verify_cpu()
 
 
 
-static void process_multiboot_info(multiboot_info const * const mbi)
+static void ProcessMultibootInfo(multiboot_info const * const mbi)
 {
     if (mbi->flags & MULTIBOOT_MEMORY_INFO)
     {
@@ -163,7 +163,7 @@ static void process_multiboot_info(multiboot_info const * const mbi)
 
 
 
-static void process_multiboot_info(multiboot2_info const * const mbi)
+static void ProcessMultibootInfo(multiboot2_info const * const mbi)
 {
     const multiboot2_tag_basic_meminfo* meminfo = NULL;
     const multiboot2_tag_mmap* mmap = NULL;
@@ -236,7 +236,7 @@ static void process_multiboot_info(multiboot2_info const * const mbi)
 
 
 
-static void boot(int multibootVersion)
+static void Boot(int multibootVersion)
 {
     printf("Bootloader      : Multiboot %d\n", multibootVersion);
 
@@ -257,19 +257,19 @@ extern "C" void multiboot_main(unsigned int magic, void* mbi)
 
     printf("Kiznix Multiboot Bootloader\n\n");
 
-    if (!verify_cpu())
+    if (!VerifyCPU())
     {
         printf("CPU doesn't support required features, aborting\n");
     }
     else if (magic == MULTIBOOT_BOOTLOADER_MAGIC && mbi)
     {
-        process_multiboot_info(static_cast<multiboot_info*>(mbi));
-        boot(1);
+        ProcessMultibootInfo(static_cast<multiboot_info*>(mbi));
+        Boot(1);
     }
     else if (magic== MULTIBOOT2_BOOTLOADER_MAGIC && mbi)
     {
-        process_multiboot_info(static_cast<multiboot2_info*>(mbi));
-        boot(2);
+        ProcessMultibootInfo(static_cast<multiboot2_info*>(mbi));
+        Boot(2);
     }
     else
     {

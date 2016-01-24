@@ -3,12 +3,12 @@
 
 size_t strlen(const char* string)
 {
-    size_t result = 0;
+    size_t count = 0;
 
     for (const char* p = string; *p; ++p)
     {
-        ++result;
+        ++count;
     }
 
-    return result;
+    return count;
 }

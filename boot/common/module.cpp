@@ -64,9 +64,9 @@ void Modules::Print()
     {
         const ModuleInfo& module = m_modules[i];
 
-        printf("    %08x%08x - %08x%08x : %s\n",
+        printf("    %08x%08x - %08x%08x : ",
             (unsigned)(module.start >> 32), (unsigned)(module.start & 0xFFFFFFFF),
-            (unsigned)(module.end >> 32), (unsigned)(module.end & 0xFFFFFFFF),
-            module.name);
+            (unsigned)(module.end >> 32), (unsigned)(module.end & 0xFFFFFFFF));
+        puts(module.name);
     }
 }
