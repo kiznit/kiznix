@@ -32,6 +32,8 @@ SECTIONS
 {
     . = 1M;
 
+    bootloader_image_start = .;
+
     .text :
     {
         *(.multiboot)   /* Make sure the multiboot headers are at the beginning of the image */
@@ -58,4 +60,6 @@ SECTIONS
         *(.comment)
         *(.eh_frame)
     }
+
+    bootloader_image_end = .;
 }

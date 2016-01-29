@@ -113,5 +113,5 @@ section .bss nobits
 align 0x1000
 
 _boot_stack_base:
-    resb 0x4000
+    resb 0x10000
 _boot_stack_top:

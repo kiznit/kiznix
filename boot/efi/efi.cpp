@@ -98,10 +98,16 @@ static EFI_STATUS LoadModule(EFI_HANDLE hDevice, const wchar_t* szPath, const ch
 
     UINTN fileSize = SizeSimpleReadFile(fp);
 
-    // In theory I should be able to call AllocatePool with a custom memory type (0x80000000)
+    // In theory I should be able to call AllocatePages with a custom memory type (0x80000000)
     // to track module data. In practice, doing so crashes my main development system.
     // Motherboard/firmware info: Hero Hero Maximus VI (build 1603 2014/09/19).
-    void* fileData = AllocatePool(fileSize);
+    UINTN pageCount = (fileSize + EFI_PAGE_SIZE - 1) & ~EFI_PAGE_MASK;
+    EFI_PHYSICAL_ADDRESS address = 0xBFFFFFFF;
+    status = BS->AllocatePages(AllocateMaxAddress, EfiBootServicesData, pageCount, &address);
+    if (EFI_ERROR(status))
+        return status;
+
+    void* fileData = (void*)address;
     if (!fileData)
         return EFI_OUT_OF_RESOURCES;
 
@@ -220,11 +226,13 @@ static EFI_STATUS BuildMemoryMap()
         const ModuleInfo& module = *it;
 
         // Round start/end to page boundaries
-        const physaddr_t start = module.start & ~EFI_PAGE_MASK;
-        const physaddr_t end = (module.end + EFI_PAGE_SIZE - 1) & ~EFI_PAGE_MASK;
+        const physaddr_t start = MEMORY_ROUND_PAGE_DOWN(module.start);
+        const physaddr_t end = MEMORY_ROUND_PAGE_UP(module.end);
 
         g_memoryMap.AddEntry(MemoryType_Bootloader, start, end);
     }
+
+    g_memoryMap.Sanitize();
 
     return EFI_SUCCESS;
 }

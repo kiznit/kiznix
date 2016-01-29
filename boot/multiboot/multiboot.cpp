@@ -43,6 +43,8 @@ void* operator new(size_t, void* where) { return where; }
 static MemoryMap g_memoryMap;
 static Modules g_modules;
 
+extern const char bootloader_image_start[];
+extern const char bootloader_image_end[];
 
 
 extern "C" void __kiznix_putc(unsigned char c)
@@ -239,6 +241,25 @@ static void ProcessMultibootInfo(multiboot2_info const * const mbi)
 static void Boot(int multibootVersion)
 {
     printf("Bootloader      : Multiboot %d\n", multibootVersion);
+
+    // Add bootloader to memory map
+    const physaddr_t start = MEMORY_ROUND_PAGE_DOWN((physaddr_t)&bootloader_image_start);
+    const physaddr_t end = MEMORY_ROUND_PAGE_UP((physaddr_t)&bootloader_image_end);
+    g_memoryMap.AddEntry(MemoryType_Bootloader, start, end);
+
+    // Add modules to memory map
+    for (Modules::const_iterator it = g_modules.begin(); it != g_modules.end(); ++it)
+    {
+        const ModuleInfo& module = *it;
+
+        // Round start/end to page boundaries
+        const physaddr_t start = MEMORY_ROUND_PAGE_DOWN(module.start);
+        const physaddr_t end = MEMORY_ROUND_PAGE_UP(module.end);
+
+        g_memoryMap.AddEntry(MemoryType_Bootloader, start, end);
+    }
+
+    g_memoryMap.Sanitize();
 
     putchar('\n');
     g_memoryMap.Print();

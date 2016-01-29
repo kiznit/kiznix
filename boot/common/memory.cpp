@@ -41,24 +41,62 @@ void MemoryMap::AddEntry(MemoryType type, physaddr_t start, physaddr_t end)
     if (start >= end)
         return;
 
-    // Check if we can merge this new range with an existing entry
+    // Walk through our existing entries to decide what to do with this new range
     for (int i = 0; i != m_count; ++i)
     {
         MemoryEntry* entry = &m_entries[i];
 
-        if (type != entry->type)
-            continue;
-
-        if (start == entry->end)
+        // Same type?
+        if (type == entry->type)
         {
-            entry->end = end;
-            return;
+            // Check for overlaps / adjacency
+            if (start <= entry->end && end >= entry->start)
+            {
+                // Update existing entry in-place
+                if (start < entry->start)
+                    entry->start = start;
+
+                if (end > entry->end)
+                    entry->end = end;
+
+                return;
+            }
         }
-
-        if (end == entry->start)
+        else
         {
-            entry->start = start;
-            return;
+            // Types are different, check for overlaps
+            if (start < entry->end && end > entry->start)
+            {
+                // Copy the entry as we will delete it
+                MemoryEntry other = *entry;
+
+                // Delete existing entry
+                --m_count;
+                for (int j = i; j != m_count; ++j)
+                {
+                    m_entries[j] = m_entries[j+1];
+                }
+
+                // Handle left piece
+                if (start < other.start)
+                    AddEntry(type, start, other.start);
+                else if (other.start < start)
+                    AddEntry(other.type, other.start, start);
+
+                // Handle overlap
+                MemoryType overlapType = type < other.type ? other.type : type;
+                physaddr_t overlapStart = start < other.start ? other.start : start;
+                physaddr_t overlapEnd = end < other.end ? end : other.end;
+                AddEntry(overlapType, overlapStart, overlapEnd);
+
+                // Handle right piece
+                if (end < other.end)
+                    AddEntry(other.type, end, other.end);
+                else if (other.end < end)
+                    AddEntry(type, other.end, end);
+
+                return;
+            }
         }
     }
 
@@ -126,53 +164,29 @@ void MemoryMap::Print()
 
 
 
-
-/*
-void memory_sanitize(MemoryTable* table)
+void MemoryMap::Sanitize()
 {
-    (void)table;
+    // We will sanitize the memory map by doing an insert-sort of all entries
+    // MemoryMap::AddEntry() will take care of merging adjacent blocks.
+    MemoryMap sorted;
 
-    // First step: insert-sort all entries into a temporary table
-    MemoryTable sorted;
-    memory_init(&sorted);
-
-    while (table->count > 0)
+    while (m_count > 0)
     {
-        MemoryEntry* candidate = &table->entries[0];
+        MemoryEntry* candidate = &m_entries[0];
 
-        for (int i = 1; i != table->count; ++i)
+        for (int i = 1; i != m_count; ++i)
         {
-            MemoryEntry* entry = &table->entries[i];
+            MemoryEntry* entry = &m_entries[i];
             if (entry->start < candidate->start)
                 candidate = entry;
             else if (entry->start == candidate->start && entry->end < candidate->end)
                 candidate = entry;
         }
 
-        sorted.entries[sorted.count++] = *candidate;
+        sorted.AddEntry(candidate->type, candidate->start, candidate->end);
 
-        *candidate = table->entries[--table->count];
+        *candidate = m_entries[--m_count];
     }
 
-
-    // Now insert the entries back into the table, handling overlaps
-    for (int i = 0; i != sorted.count; ++i)
-    {
-        MemoryEntry* entry = &sorted.entries[i];
-        physaddr_t start = entry->start;
-        physaddr_t end = entry->end;
-        uint32_t type = entry->type;
-
-        for (int j = i; j != sorted.count; ++j)
-        {
-            MemoryEntry* entry = &sorted.entries[j];
-            if (entry->start >= end)
-                break;
-
-//todo: handle overlaps
-        }
-
-        memory_add_entry(table, start, end, type);
-    }
+    *this = sorted;
 }
-*/

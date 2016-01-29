@@ -33,16 +33,25 @@
 #define MEMORY_MAX_ENTRIES 1024
 
 
+#if defined(__i386__) || defined(__x86_64__)
+#define MEMORY_PAGE_SIZE 4096
+#endif
 
+#define MEMORY_ROUND_PAGE_DOWN(x) ((x) & ~(MEMORY_PAGE_SIZE - 1))
+#define MEMORY_ROUND_PAGE_UP(x) (((x) + MEMORY_PAGE_SIZE - 1) & ~(MEMORY_PAGE_SIZE - 1))
+
+
+// The order these memory types are defined is important!
+// When handling overlapping memory ranges, higher values take precedence.
 enum MemoryType
 {
     MemoryType_Available,       // Available memory (RAM)
-    MemoryType_Reserved,        // Reserved / unknown / do not use
     MemoryType_Unusable,        // Memory in which errors have been detected
-    MemoryType_FirmwareRuntime, // Firmware Runtime Memory (e.g. EFI runtime services)
+    MemoryType_Bootloader,      // Bootloader
     MemoryType_AcpiReclaimable, // ACPI Tables (can be reclaimed once parsed)
     MemoryType_AcpiNvs,         // ACPI Non-Volatile Storage
-    MemoryType_Bootloader,      // Bootloader
+    MemoryType_FirmwareRuntime, // Firmware Runtime Memory (e.g. EFI runtime services)
+    MemoryType_Reserved,        // Reserved / unknown / do not use
 };
 
 
@@ -65,6 +74,8 @@ public:
     void AddEntry(MemoryType type, physaddr_t start, physaddr_t end);
 
     void Print();
+
+    void Sanitize();
 
 
 private:
