@@ -125,11 +125,11 @@ static void ProcessMultibootInfo(multiboot_info const * const mbi)
                 break;
 
             case MULTIBOOT_MEMORY_ACPI_RECLAIMABLE:
-                type = MemoryType_ACPIReclaimable;
+                type = MemoryType_AcpiReclaimable;
                 break;
 
             case MULTIBOOT_MEMORY_NVS:
-                type = MemoryType_ACPIRuntime;
+                type = MemoryType_AcpiNvs;
                 break;
 
             case MULTIBOOT_MEMORY_BADRAM:
@@ -209,11 +209,11 @@ static void ProcessMultibootInfo(multiboot2_info const * const mbi)
                 break;
 
             case MULTIBOOT_MEMORY_ACPI_RECLAIMABLE:
-                type = MemoryType_ACPIReclaimable;
+                type = MemoryType_AcpiReclaimable;
                 break;
 
             case MULTIBOOT_MEMORY_NVS:
-                type = MemoryType_ACPIRuntime;
+                type = MemoryType_AcpiNvs;
                 break;
 
             case MULTIBOOT_MEMORY_BADRAM:

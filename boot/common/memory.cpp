@@ -104,12 +104,16 @@ void MemoryMap::Print()
             type = "Firmware Runtime";
             break;
 
-        case MemoryType_ACPIReclaimable:
+        case MemoryType_AcpiReclaimable:
             type = "ACPI Reclaimable";
             break;
 
-        case MemoryType_ACPIRuntime:
-            type = "ACPI Runtime (NVS)";
+        case MemoryType_AcpiNvs:
+            type = "ACPI Non-Volatile Storage";
+            break;
+
+        case MemoryType_Bootloader:
+            type = "Bootloader";
             break;
         }
 

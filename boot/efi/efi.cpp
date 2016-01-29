@@ -82,6 +82,72 @@ static void InitConsole(SIMPLE_TEXT_OUTPUT_INTERFACE* conout)
 
 
 
+static EFI_STATUS LoadModule(EFI_HANDLE hDevice, const wchar_t* szPath, const char* name)
+{
+    EFI_DEVICE_PATH* path = FileDevicePath(hDevice, (CHAR16*)szPath);
+    if (!path)
+        return EFI_LOAD_ERROR;
+
+    SIMPLE_READ_FILE fp;
+    EFI_STATUS status = OpenSimpleReadFile(FALSE, NULL, 0, &path, &hDevice, &fp);
+    if (EFI_ERROR(status))
+    {
+        Print((CHAR16*)L"Could not open module file \"%s\"\n", szPath);
+        return status;
+    }
+
+    UINTN fileSize = SizeSimpleReadFile(fp);
+
+    // In theory I should be able to call AllocatePool with a custom memory type (0x80000000)
+    // to track module data. In practice, doing so crashes my main development system.
+    // Motherboard/firmware info: Hero Hero Maximus VI (build 1603 2014/09/19).
+    void* fileData = AllocatePool(fileSize);
+    if (!fileData)
+        return EFI_OUT_OF_RESOURCES;
+
+    UINTN readSize = fileSize;
+    status = ReadSimpleReadFile(fp, 0, &readSize, fileData);
+    if (EFI_ERROR(status) || readSize != fileSize)
+    {
+        Print((CHAR16*)L"Could not read module file \"%s\"\n", szPath);
+        return EFI_LOAD_ERROR;
+    }
+
+    const physaddr_t start = (uintptr_t) fileData;
+    const physaddr_t end = start + readSize;
+
+    g_modules.AddModule(name, start, end);
+
+    return EFI_SUCCESS;
+}
+
+
+
+static EFI_STATUS LoadModules(EFI_HANDLE hDevice)
+{
+    new (&g_modules) Modules();
+
+    EFI_STATUS status;
+
+    status = LoadModule(hDevice, L"\\kiznix\\trampoline", "/kiznix/trampoline");
+    if (EFI_ERROR(status))
+        return status;
+
+#if defined(__i386__) || defined(__x86_64__)
+    status = LoadModule(hDevice, L"\\kiznix\\kernel_ia32", "/kiznix/kernel_ia32");
+    if (EFI_ERROR(status))
+        return status;
+
+    status = LoadModule(hDevice, L"\\kiznix\\kernel_x86_64", "/kiznix/kernel_x86_64");
+    if (EFI_ERROR(status))
+        return status;
+#endif
+
+    return EFI_SUCCESS;
+}
+
+
+
 static EFI_STATUS BuildMemoryMap()
 {
     new (&g_memoryMap) MemoryMap();
@@ -127,11 +193,11 @@ static EFI_STATUS BuildMemoryMap()
             break;
 
         case EfiACPIReclaimMemory:
-            type = MemoryType_ACPIReclaimable;
+            type = MemoryType_AcpiReclaimable;
             break;
 
         case EfiACPIMemoryNVS:
-            type = MemoryType_ACPIRuntime;
+            type = MemoryType_AcpiNvs;
             break;
 
         case EfiReservedMemoryType:
@@ -148,67 +214,21 @@ static EFI_STATUS BuildMemoryMap()
         g_memoryMap.AddEntry(type, start, end);
     }
 
-    return EFI_SUCCESS;
-}
-
-
-
-static EFI_STATUS LoadModule(EFI_HANDLE hDevice, const wchar_t* szPath, const char* name)
-{
-    EFI_DEVICE_PATH* path = FileDevicePath(hDevice, (CHAR16*)szPath);
-    if (!path)
-        return EFI_LOAD_ERROR;
-
-    SIMPLE_READ_FILE fp;
-    EFI_STATUS status = OpenSimpleReadFile(FALSE, NULL, 0, &path, &hDevice, &fp);
-    if (EFI_ERROR(status))
+    // Now account for the bootloader modules
+    for (Modules::const_iterator it = g_modules.begin(); it != g_modules.end(); ++it)
     {
-        Print((CHAR16*)L"Could not open module file \"%s\"\n", szPath);
-        return status;
+        const ModuleInfo& module = *it;
+
+        // Round start/end to page boundaries
+        const physaddr_t start = module.start & ~EFI_PAGE_MASK;
+        const physaddr_t end = (module.end + EFI_PAGE_SIZE - 1) & ~EFI_PAGE_MASK;
+
+        g_memoryMap.AddEntry(MemoryType_Bootloader, start, end);
     }
 
-    UINTN fileSize = SizeSimpleReadFile(fp);
-    void* fileData = AllocatePool(fileSize);
-    UINTN readSize = fileSize;
-    status = ReadSimpleReadFile(fp, 0, &readSize, fileData);
-    if (EFI_ERROR(status) || readSize != fileSize)
-    {
-        Print((CHAR16*)L"Could not read module file \"%s\"\n", szPath);
-        return EFI_LOAD_ERROR;
-    }
-
-    const physaddr_t start = (uintptr_t) fileData;
-    const physaddr_t end = start + readSize;
-
-    g_modules.AddModule(name, start, end);
-
     return EFI_SUCCESS;
 }
 
-
-
-static EFI_STATUS LoadModules(EFI_HANDLE hDevice)
-{
-    new (&g_modules) Modules();
-
-    EFI_STATUS status;
-
-    status = LoadModule(hDevice, L"\\kiznix\\trampoline", "/kiznix/trampoline");
-    if (EFI_ERROR(status))
-        return status;
-
-#if defined(__i386__) || defined(__x86_64__)
-    status = LoadModule(hDevice, L"\\kiznix\\kernel_ia32", "/kiznix/kernel_ia32");
-    if (EFI_ERROR(status))
-        return status;
-
-    status = LoadModule(hDevice, L"\\kiznix\\kernel_x86_64", "/kiznix/kernel_x86_64");
-    if (EFI_ERROR(status))
-        return status;
-#endif
-
-    return EFI_SUCCESS;
-}
 
 
 static EFI_STATUS Boot(EFI_HANDLE hImage)
@@ -228,17 +248,17 @@ static EFI_STATUS Boot(EFI_HANDLE hImage)
     printf("Boot device     : %s\n", DevicePathToStr(DevicePathFromHandle(bootLoaderImage->DeviceHandle)));
     printf("Bootloader      : %s\n", DevicePathToStr(bootLoaderImage->FilePath));
 
-    status = BuildMemoryMap();
-    if (EFI_ERROR(status))
-    {
-        printf("Could not retrieve memory map");
-        return status;
-    }
-
     status = LoadModules(bootLoaderImage->DeviceHandle);
     if (EFI_ERROR(status))
     {
         printf("Could not load modules");
+        return status;
+    }
+
+    status = BuildMemoryMap();
+    if (EFI_ERROR(status))
+    {
+        printf("Could not retrieve memory map");
         return status;
     }
 

@@ -40,8 +40,9 @@ enum MemoryType
     MemoryType_Reserved,        // Reserved / unknown / do not use
     MemoryType_Unusable,        // Memory in which errors have been detected
     MemoryType_FirmwareRuntime, // Firmware Runtime Memory (e.g. EFI runtime services)
-    MemoryType_ACPIReclaimable, // ACPI Tables (can be reclaimed once parsed)
-    MemoryType_ACPIRuntime,     // ACPI Runtime Memory (e.g. Non-Volatile Storage)
+    MemoryType_AcpiReclaimable, // ACPI Tables (can be reclaimed once parsed)
+    MemoryType_AcpiNvs,         // ACPI Non-Volatile Storage
+    MemoryType_Bootloader,      // Bootloader
 };
 
 

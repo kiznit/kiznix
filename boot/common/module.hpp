@@ -54,6 +54,13 @@ public:
     void Print();
 
 
+    // STL interface
+    typedef const ModuleInfo* const_iterator;
+
+    const_iterator begin() const    { return m_modules; }
+    const_iterator end() const      { return m_modules + m_count; }
+
+
 private:
 
     ModuleInfo  m_modules[MODULE_MAX_ENTRIES];  // Modules
