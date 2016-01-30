@@ -214,22 +214,16 @@ static EFI_STATUS BuildMemoryMap()
             break;
         }
 
-        uint64_t start = descriptor->PhysicalStart;
-        uint64_t end = start + descriptor->NumberOfPages * EFI_PAGE_SIZE;
+        const physaddr_t start = descriptor->PhysicalStart;
+        const physaddr_t end = start + descriptor->NumberOfPages * EFI_PAGE_SIZE;
 
         g_memoryMap.AddEntry(type, start, end);
     }
 
     // Now account for the bootloader modules
-    for (Modules::const_iterator it = g_modules.begin(); it != g_modules.end(); ++it)
+    for (Modules::const_iterator module = g_modules.begin(); module != g_modules.end(); ++module)
     {
-        const ModuleInfo& module = *it;
-
-        // Round start/end to page boundaries
-        const physaddr_t start = MEMORY_ROUND_PAGE_DOWN(module.start);
-        const physaddr_t end = MEMORY_ROUND_PAGE_UP(module.end);
-
-        g_memoryMap.AddEntry(MemoryType_Bootloader, start, end);
+        g_memoryMap.AddEntry(MemoryType_Bootloader, module->start, module->end);
     }
 
     g_memoryMap.Sanitize();
