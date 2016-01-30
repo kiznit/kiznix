@@ -37,14 +37,14 @@ $(eval $(call load-modules,$(MODULES)))
 CPPFLAGS	:= $(addprefix -I,$(GLOBAL_INCLUDES))
 CFLAGS		:= $(CFLAGS) -fpic -march=i386
 CXXFLAGS	:= $(CXXFLAGS) -fpic -march=i386
-LDFLAGS		:= $(LDFLAGS) -shared -T trampoline.ld
+LDFLAGS		:= $(LDFLAGS) -shared -T startos.ld
 
 
 
 .PHONY all:
-all: $(BUILDDIR)/bin/trampoline
+all: $(BUILDDIR)/bin/startos
 
-$(BUILDDIR)/bin/trampoline: $(OBJECTS) trampoline.ld
+$(BUILDDIR)/bin/startos: $(OBJECTS) startos.ld
 	@mkdir -p $(dir $@)
 	$(LD) $(LDFLAGS) $(OBJECTS) -o $@
 

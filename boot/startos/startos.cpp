@@ -29,8 +29,8 @@ char data[100];
 char data2[] = { 1,2,3,4,5,6,7,8,9,10 };
 
 
-// Trampoline entry point
-extern "C" const char* trampoline_main()
+// StartOS entry point
+extern "C" const char* startos_main()
 {
     for (int i = 0; i!= 100; ++i)
     {

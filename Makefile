@@ -59,12 +59,12 @@ multiboot_ia32:
 
 
 ###############################################################################
-# Trampoline
+# StartOS
 ###############################################################################
 
-.PHONE: trampoline_ia32
-trampoline_ia32:
-	$(MAKE) TARGET_ARCH=ia32 BUILDDIR=$(BUILDDIR)/ia32/trampoline -C $(SRCDIR)/boot/trampoline
+.PHONE: startos_ia32
+startos_ia32:
+	$(MAKE) TARGET_ARCH=ia32 BUILDDIR=$(BUILDDIR)/ia32/startos -C $(SRCDIR)/boot/startos
 
 
 ###############################################################################
@@ -85,13 +85,13 @@ kernel_x86_64:
 ###############################################################################
 
 .PHONY: bios-image
-bios-image: multiboot_ia32 trampoline_ia32 kernel_ia32 kernel_x86_64
+bios-image: multiboot_ia32 startos_ia32 kernel_ia32 kernel_x86_64
 	$(RM) -r $(BUILDDIR)/bios-image
 	mkdir -p $(BUILDDIR)/bios-image/boot/grub
 	cp $(BUILDDIR)/ia32/multiboot/bin/multiboot $(BUILDDIR)/bios-image/boot/kiznix_multiboot
 	cp $(SRCDIR)/iso/grub.cfg $(BUILDDIR)/bios-image/boot/grub/grub.cfg
 	mkdir -p $(BUILDDIR)/bios-image/kiznix
-	cp $(BUILDDIR)/ia32/trampoline/bin/trampoline $(BUILDDIR)/bios-image/kiznix/trampoline
+	cp $(BUILDDIR)/ia32/startos/bin/startos $(BUILDDIR)/bios-image/kiznix/startos
 	cp $(BUILDDIR)/ia32/kernel/bin/kernel $(BUILDDIR)/bios-image/kiznix/kernel_ia32
 	cp $(BUILDDIR)/x86_64/kernel/bin/kernel $(BUILDDIR)/bios-image/kiznix/kernel_x86_64
 	mkdir -p $(BINDIR)
@@ -112,13 +112,13 @@ $(BUILDDIR)/x86/multiboot/Makefile:
 ###############################################################################
 
 .PHONY: efi-image
-efi-image: efi_ia32 efi_x86_64 trampoline_ia32 kernel_ia32 kernel_x86_64
+efi-image: efi_ia32 efi_x86_64 startos_ia32 kernel_ia32 kernel_x86_64
 	$(RM) -r $(BUILDDIR)/efi-image
 	mkdir -p $(BUILDDIR)/efi-image/efi/boot
 	cp $(BUILDDIR)/ia32/efi/bin/bootia32.efi $(BUILDDIR)/efi-image/efi/boot
 	cp $(BUILDDIR)/x86_64/efi/bin/bootx64.efi $(BUILDDIR)/efi-image/efi/boot
 	mkdir -p $(BUILDDIR)/efi-image/kiznix
-	cp $(BUILDDIR)/ia32/trampoline/bin/trampoline $(BUILDDIR)/efi-image/kiznix/trampoline
+	cp $(BUILDDIR)/ia32/startos/bin/startos $(BUILDDIR)/efi-image/kiznix/startos
 	cp $(BUILDDIR)/ia32/kernel/bin/kernel $(BUILDDIR)/efi-image/kiznix/kernel_ia32
 	cp $(BUILDDIR)/x86_64/kernel/bin/kernel $(BUILDDIR)/efi-image/kiznix/kernel_x86_64
 	mkdir -p $(BINDIR)
