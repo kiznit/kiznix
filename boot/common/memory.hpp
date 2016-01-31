@@ -80,6 +80,8 @@ public:
 
 private:
 
+    void AddEntryHelper(MemoryType type, physaddr_t start, physaddr_t end);
+
     MemoryEntry  m_entries[MEMORY_MAX_ENTRIES]; // Memory entries
     int          m_count;                       // Memory entry count
 };

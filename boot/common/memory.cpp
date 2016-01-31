@@ -46,16 +46,23 @@ void MemoryMap::AddEntry(MemoryType type, physaddr_t start, physaddr_t end)
     {
         start = MEMORY_ROUND_PAGE_UP(start);
         end = MEMORY_ROUND_PAGE_DOWN(end);
-
-        // Anything left?
-        if (start >= end)
-            return;
     }
     else
     {
         start = MEMORY_ROUND_PAGE_DOWN(start);
         end = MEMORY_ROUND_PAGE_UP(end);
     }
+
+    AddEntryHelper(type, start, end);
+}
+
+
+
+void MemoryMap::AddEntryHelper(MemoryType type, physaddr_t start, physaddr_t end)
+{
+    // Ignore invalid entries (including zero-sized ones)
+    if (start >= end)
+        return;
 
     // Walk through our existing entries to decide what to do with this new range
     for (int i = 0; i != m_count; ++i)
