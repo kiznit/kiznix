@@ -118,6 +118,8 @@ efi-image: efi_ia32 efi_x86_64 startos_ia32 kernel_ia32 kernel_x86_64
 	cp $(BUILDDIR)/ia32/efi/bin/bootia32.efi $(BUILDDIR)/efi-image/efi/boot
 	cp $(BUILDDIR)/x86_64/efi/bin/bootx64.efi $(BUILDDIR)/efi-image/efi/boot
 	mkdir -p $(BUILDDIR)/efi-image/kiznix
+	cp $(BUILDDIR)/ia32/efi/bin/bootia32.efi $(BUILDDIR)/efi-image/kiznix
+	cp $(BUILDDIR)/x86_64/efi/bin/bootx64.efi $(BUILDDIR)/efi-image/kiznix
 	cp $(BUILDDIR)/ia32/startos/bin/startos $(BUILDDIR)/efi-image/kiznix/startos
 	cp $(BUILDDIR)/ia32/kernel/bin/kernel $(BUILDDIR)/efi-image/kiznix/kernel_ia32
 	cp $(BUILDDIR)/x86_64/kernel/bin/kernel $(BUILDDIR)/efi-image/kiznix/kernel_x86_64
