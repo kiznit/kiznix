@@ -47,6 +47,10 @@ MemoryMap::MemoryMap()
 
 void MemoryMap::AddEntry(MemoryType type, physaddr_t start, physaddr_t end)
 {
+    // Make sure we don't overflow
+    if (end > MEMORY_MAX_PHYSICAL_ADDRESS)
+        end = MEMORY_MAX_PHYSICAL_ADDRESS;
+
     // Ignore invalid entries (including zero-sized ones)
     if (start >= end)
         return;
@@ -147,31 +151,9 @@ void MemoryMap::AddEntryHelper(MemoryType type, physaddr_t start, physaddr_t end
 
 
 
-physaddr_t MemoryMap::Alloc(MemoryZone zone, MemoryType type, uintptr_t sizeInBytes)
+physaddr_t MemoryMap::AllocInRange(MemoryType type, uintptr_t sizeInBytes, physaddr_t minAddress, physaddr_t maxAddress)
 {
     const uintptr_t size = MEMORY_ROUND_PAGE_UP(sizeInBytes);
-
-    physaddr_t minAddress;
-
-    switch (zone)
-    {
-    case MemoryZone_Low:
-        minAddress = MEMORYZONE_LOW;
-        break;
-
-    case MemoryZone_ISA:
-        minAddress = MEMORYZONE_ISA;
-        break;
-
-    default:
-    case MemoryZone_Normal:
-        minAddress = MEMORYZONE_NORMAL;
-        break;
-
-    case MemoryZone_High:
-        minAddress = MEMORYZONE_HIGH;
-        break;
-    }
 
     for (int i = 0; i != m_count; ++i)
     {
@@ -180,22 +162,78 @@ physaddr_t MemoryMap::Alloc(MemoryZone zone, MemoryType type, uintptr_t sizeInBy
         if (entry.type != MemoryType_Available)
             continue;
 
-        // Calculate allocation region
-        const physaddr_t start = entry.start < minAddress ? minAddress : entry.start;
-        const physaddr_t end = start + size;
+        // Calculate entry's overlap with what we need
+        const physaddr_t overlapStart = entry.start < minAddress ? minAddress : entry.start;
+        const physaddr_t overlapEnd = entry.end > maxAddress ? maxAddress : entry.end;
 
-        if (end > entry.end)
+        if (overlapStart > overlapEnd || overlapEnd - overlapStart < size)
             continue;
 
-        AddEntry(type, start, end);
+        AddEntry(type, overlapStart, overlapStart + size);
 
-        return start;
+        return overlapStart;
     }
 
-    // Fail, try next lower memory zone
-    if (zone > 0)
+    return -1;
+}
+
+
+
+physaddr_t MemoryMap::Alloc(MemoryZone zone, MemoryType type, uintptr_t sizeInBytes)
+{
+    if (zone < 0 || zone > MemoryZone_High)
+        zone = MemoryZone_Normal;
+
+    physaddr_t maxAddress;
+
+    switch (zone)
     {
-        return Alloc((MemoryZone)(zone-1), type, sizeInBytes);
+    case MemoryZone_Low:
+        maxAddress = MEMORYZONE_ISA;
+        break;
+
+    case MemoryZone_ISA:
+        maxAddress = MEMORYZONE_NORMAL;
+        break;
+
+    case MemoryZone_Normal:
+        maxAddress = MEMORYZONE_HIGH;
+        break;
+
+    case MemoryZone_High:
+        maxAddress = MEMORY_MAX_PHYSICAL_ADDRESS;
+        break;
+    }
+
+    for ( ; zone >= 0; zone = (MemoryZone)(zone - 1))
+    {
+        physaddr_t minAddress;
+
+        switch (zone)
+        {
+        case MemoryZone_Low:
+            minAddress = MEMORYZONE_LOW;
+            break;
+
+        case MemoryZone_ISA:
+            minAddress = MEMORYZONE_ISA;
+            break;
+
+        case MemoryZone_Normal:
+            minAddress = MEMORYZONE_NORMAL;
+            break;
+
+        case MemoryZone_High:
+            minAddress = MEMORYZONE_HIGH;
+            break;
+        }
+
+        physaddr_t memory = AllocInRange(type, sizeInBytes, minAddress, maxAddress);
+
+        if (memory != (physaddr_t)-1)
+        {
+            return memory;
+        }
     }
 
     // Couldn't allocate memory

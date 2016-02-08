@@ -34,11 +34,13 @@
 
 
 #if defined(__i386__) || defined(__x86_64__)
-#define MEMORY_PAGE_SIZE 4096
+#define MEMORY_PAGE_SIZE 4096ull
 #endif
 
 #define MEMORY_ROUND_PAGE_DOWN(x) ((x) & ~(MEMORY_PAGE_SIZE - 1))
 #define MEMORY_ROUND_PAGE_UP(x) (((x) + MEMORY_PAGE_SIZE - 1) & ~(MEMORY_PAGE_SIZE - 1))
+
+#define MEMORY_MAX_PHYSICAL_ADDRESS (~(MEMORY_PAGE_SIZE - 1))
 
 
 // The order these memory types are defined is important!
@@ -82,7 +84,12 @@ public:
 
     void AddEntry(MemoryType type, physaddr_t start, physaddr_t end);
 
-    // Will return (physaddr_t) -1 on error
+    // Allocate memory within the specified physical address range
+    // Returns -1 on error
+    physaddr_t AllocInRange(MemoryType type, uintptr_t sizeInBytes, physaddr_t minAddress, physaddr_t maxAddress);
+
+    // Allocate memory within the specified memory zone
+    // Returns -1 on error
     physaddr_t Alloc(MemoryZone zone, MemoryType type, uintptr_t sizeInBytes);
 
     void Print();
