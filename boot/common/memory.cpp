@@ -28,6 +28,16 @@
 #include <stdio.h>
 
 
+
+#if defined(__i386__) || defined(__x86_64__)
+#define MEMORYZONE_LOW 0ull
+#define MEMORYZONE_ISA 0x00100000ull
+#define MEMORYZONE_NORMAL 0x01000000ull
+#define MEMORYZONE_HIGH 0x100000000ull
+#endif
+
+
+
 MemoryMap::MemoryMap()
 {
     m_count = 0;
@@ -133,6 +143,63 @@ void MemoryMap::AddEntryHelper(MemoryType type, physaddr_t start, physaddr_t end
     entry->end = end;
     entry->type = type;
     ++m_count;
+}
+
+
+
+physaddr_t MemoryMap::Alloc(MemoryZone zone, MemoryType type, uintptr_t sizeInBytes)
+{
+    const uintptr_t size = MEMORY_ROUND_PAGE_UP(sizeInBytes);
+
+    physaddr_t minAddress;
+
+    switch (zone)
+    {
+    case MemoryZone_Low:
+        minAddress = MEMORYZONE_LOW;
+        break;
+
+    case MemoryZone_ISA:
+        minAddress = MEMORYZONE_ISA;
+        break;
+
+    default:
+    case MemoryZone_Normal:
+        minAddress = MEMORYZONE_NORMAL;
+        break;
+
+    case MemoryZone_High:
+        minAddress = MEMORYZONE_HIGH;
+        break;
+    }
+
+    for (int i = 0; i != m_count; ++i)
+    {
+        const MemoryEntry& entry = m_entries[i];
+
+        if (entry.type != MemoryType_Available)
+            continue;
+
+        // Calculate allocation region
+        const physaddr_t start = entry.start < minAddress ? minAddress : entry.start;
+        const physaddr_t end = start + size;
+
+        if (end > entry.end)
+            continue;
+
+        AddEntry(type, start, end);
+
+        return start;
+    }
+
+    // Fail, try next lower memory zone
+    if (zone > 0)
+    {
+        return Alloc((MemoryZone)(zone-1), type, sizeInBytes);
+    }
+
+    // Couldn't allocate memory
+    return -1;
 }
 
 

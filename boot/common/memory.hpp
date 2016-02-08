@@ -64,6 +64,15 @@ struct MemoryEntry
 };
 
 
+enum MemoryZone
+{
+    MemoryZone_Low,                 // x86: 0 - 1 MB
+    MemoryZone_ISA,                 // x86: 1 MB - 16 MB
+    MemoryZone_Normal,              // x86: 16 MB - 4 GB
+    MemoryZone_High,                // x86: 4 GB - ...
+};
+
+
 
 class MemoryMap
 {
@@ -72,6 +81,9 @@ public:
     MemoryMap();
 
     void AddEntry(MemoryType type, physaddr_t start, physaddr_t end);
+
+    // Will return (physaddr_t) -1 on error
+    physaddr_t Alloc(MemoryZone zone, MemoryType type, uintptr_t sizeInBytes);
 
     void Print();
 
