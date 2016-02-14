@@ -26,7 +26,10 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <cpuid.h>
+
+#include <sys/elf.h>
 
 #include "console.hpp"
 
@@ -238,6 +241,105 @@ static void ProcessMultibootInfo(multiboot2_info const * const mbi)
 
 
 
+static int LoadElf32(const void* file)
+{
+    const Elf32_Ehdr* ehdr = (const Elf32_Ehdr*)file;
+
+    if (ehdr->e_ident[EI_MAG0] != ELFMAG0 || ehdr->e_ident[EI_MAG1] != ELFMAG1 ||
+        ehdr->e_ident[EI_MAG2] != ELFMAG2 || ehdr->e_ident[EI_MAG3] != ELFMAG3 ||
+        ehdr->e_ident[EI_DATA] != ELFDATA2LSB)
+    {
+        return -1;
+    }
+
+    if (ehdr->e_ident[EI_CLASS] != ELFCLASS32 ||
+        ehdr->e_machine != EM_386 ||
+        ehdr->e_version  != EV_CURRENT)
+    {
+        return -2;
+    }
+
+    const char* phdr_base = (const char*)file + ehdr->e_phoff;
+
+    // Calculate how much memory we need to load this ELF
+    uint32_t start = 0xFFFFFFFF;
+    uint32_t end = 0;
+    uint32_t align = 1;
+
+    for (int i = 0; i != ehdr->e_phnum; ++i)
+    {
+        const Elf32_Phdr* phdr = (const Elf32_Phdr*)(phdr_base + i * ehdr->e_phentsize);
+
+        if (phdr->p_type != PT_LOAD)
+            continue;
+
+        printf("segment %d: paddr = 0x%08lx, memsz = 0x%08lx, vaddr = 0x%08lx\n", i, (long)phdr->p_paddr, (long)phdr->p_memsz, (long)phdr->p_vaddr);
+
+        if (phdr->p_paddr < start)
+            start = phdr->p_paddr;
+
+        if (phdr->p_paddr + phdr->p_memsz > end)
+            end = phdr->p_paddr + phdr->p_memsz;
+
+        if (phdr->p_align > align)
+            align = phdr->p_align;
+    }
+
+    if (start > end)
+    {
+        return -3;
+    }
+
+    printf("ELF: %08lx - %08lx, align %08lx\n", (long)start, (long)end, (long)align);
+
+    physaddr_t memory = g_memoryMap.Alloc(MemoryZone_Normal, MemoryType_Unusable, end - start);
+
+    printf("Memory allocated at %08x %08x\n", (unsigned)(memory >> 32), (unsigned)(memory & 0xFFFFFFFF));
+
+
+    return 0;
+}
+
+
+
+static int LoadStartOS()
+{
+    const ModuleInfo* startos = NULL;
+
+    for (Modules::const_iterator module = g_modules.begin(); module != g_modules.end(); ++module)
+    {
+        //todo: use case insensitive strcmp
+        if (strcmp(module->name, "/kiznix/startos") == 0)
+        {
+            startos = module;
+            break;
+        }
+    }
+
+    if (!startos)
+    {
+        printf("Module not found: startos");
+        return -1;
+    }
+
+    if (startos->end > 0x100000000)
+    {
+        printf("Module startos is in high memory (>4 GB) and can't be loaded");
+        return -1;
+    }
+
+    int result = LoadElf32((void*)startos->start);
+    if (result < 0)
+    {
+        printf("Failed to load startos");
+        return result;
+    }
+
+    return 0;
+}
+
+
+
 static void Boot(int multibootVersion)
 {
     printf("Bootloader      : Multiboot %d\n", multibootVersion);
@@ -259,6 +361,9 @@ static void Boot(int multibootVersion)
     g_memoryMap.Print();
     putchar('\n');
     g_modules.Print();
+
+    if (LoadStartOS() !=0)
+        return;
 }
 
 

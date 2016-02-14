@@ -26,5 +26,6 @@ local_sources := \
 	stdio/printf.c \
 	stdio/putchar.c \
 	stdio/puts.c \
+	string/strcmp.c \
 	string/strlen.c \
 	string/strncpy.c

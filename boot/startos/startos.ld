@@ -30,41 +30,35 @@ ENTRY(startos_main)
 
 PHDRS
 {
-    segment_text PT_LOAD;
-    segment_rodata PT_LOAD;
-    segment_data PT_LOAD;
-    segment_dynamic PT_DYNAMIC;
+    text PT_LOAD;
+    rodata PT_LOAD;
+    data PT_LOAD;
 }
 
 
 SECTIONS
 {
-    . = 0;
+    . = 0xC0000000;
 
     .text BLOCK(4K) :
     {
         *(.text)
-    } : segment_text
+    } : text
 
     .rodata BLOCK(4K) :
     {
         *(.rodata*)
-    } : segment_rodata
+    } : rodata
 
     .data BLOCK(4K) :
     {
         *(.data*)
-    } : segment_data
+    } : data
 
     .bss :
     {
         *(.bss)
-    } : segment_data
-
-    .dynamic :
-    {
-      *(.dynamic)
-    } : segment_dynamic
+    } : data
 
     /DISCARD/ :
     {

@@ -35,9 +35,9 @@ $(eval $(call load-modules,$(MODULES)))
 
 # Grub is built with -march=i386, so we do the same
 CPPFLAGS	:= $(addprefix -I,$(GLOBAL_INCLUDES))
-CFLAGS		:= $(CFLAGS) -fpic -march=i386
-CXXFLAGS	:= $(CXXFLAGS) -fpic -march=i386
-LDFLAGS		:= $(LDFLAGS) -shared -T startos.ld
+CFLAGS		:= $(CFLAGS) -march=i386
+CXXFLAGS	:= $(CXXFLAGS) -march=i386
+LDFLAGS		:= $(LDFLAGS) -T startos.ld
 
 
 
