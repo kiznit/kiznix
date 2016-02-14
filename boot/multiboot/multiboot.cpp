@@ -243,7 +243,8 @@ static void ProcessMultibootInfo(multiboot2_info const * const mbi)
 
 static int LoadElf32(const void* file)
 {
-    const Elf32_Ehdr* ehdr = (const Elf32_Ehdr*)file;
+    const char* file_base = (const char*)file;
+    const Elf32_Ehdr* ehdr = (const Elf32_Ehdr*)file_base;
 
     if (ehdr->e_ident[EI_MAG0] != ELFMAG0 || ehdr->e_ident[EI_MAG1] != ELFMAG1 ||
         ehdr->e_ident[EI_MAG2] != ELFMAG2 || ehdr->e_ident[EI_MAG3] != ELFMAG3 ||
@@ -259,7 +260,7 @@ static int LoadElf32(const void* file)
         return -2;
     }
 
-    const char* phdr_base = (const char*)file + ehdr->e_phoff;
+    const char* phdr_base = file_base + ehdr->e_phoff;
 
     // Calculate how much memory we need to load this ELF
     uint32_t start = 0xFFFFFFFF;
@@ -272,8 +273,6 @@ static int LoadElf32(const void* file)
 
         if (phdr->p_type != PT_LOAD)
             continue;
-
-        printf("segment %d: paddr = 0x%08lx, memsz = 0x%08lx, vaddr = 0x%08lx\n", i, (long)phdr->p_paddr, (long)phdr->p_memsz, (long)phdr->p_vaddr);
 
         if (phdr->p_paddr < start)
             start = phdr->p_paddr;
@@ -292,10 +291,33 @@ static int LoadElf32(const void* file)
 
     printf("ELF: %08lx - %08lx, align %08lx\n", (long)start, (long)end, (long)align);
 
-    physaddr_t memory = g_memoryMap.Alloc(MemoryZone_Normal, MemoryType_Unusable, end - start);
+    // Allocate memory
+    char* memory = (char*) g_memoryMap.Alloc(MemoryZone_Normal, MemoryType_Unusable, end - start);
 
-    printf("Memory allocated at %08x %08x\n", (unsigned)(memory >> 32), (unsigned)(memory & 0xFFFFFFFF));
+    printf("Memory allocated at %p\n", memory);
 
+    // Load ELF
+    for (int i = 0; i != ehdr->e_phnum; ++i)
+    {
+        const Elf32_Phdr* phdr = (const Elf32_Phdr*)(phdr_base + i * ehdr->e_phentsize);
+
+        if (phdr->p_type != PT_LOAD)
+            continue;
+
+        if (phdr->p_filesz != 0)
+        {
+            const char* src = file_base + phdr->p_offset;
+            void* dst = memory + (phdr->p_paddr - start);
+            memcpy(dst, src, phdr->p_filesz);
+        }
+
+        if (phdr->p_memsz > phdr->p_filesz)
+        {
+            void* dst = memory + (phdr->p_paddr - start) + phdr->p_filesz;
+            const size_t count = phdr->p_memsz - phdr->p_filesz;
+            memset(dst, 0, count);
+        }
+    }
 
     return 0;
 }
