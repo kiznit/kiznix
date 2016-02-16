@@ -27,9 +27,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-extern "C" {
-#include <efi.h>
-#include <efilib.h>
+extern "C"
+{
+    #include <efi.h>
+    #include <efilib.h>
 }
 
 #include "memory.hpp"
@@ -154,6 +155,67 @@ static EFI_STATUS LoadModules(EFI_HANDLE hDevice)
 
 
 
+static EFI_STATUS ExitBootServices(EFI_HANDLE hImage)
+{
+    UINTN descriptorCount;
+    UINTN mapKey;
+    UINTN descriptorSize;
+    UINT32 descriptorVersion;
+
+    EFI_MEMORY_DESCRIPTOR* memoryMap = LibMemoryMap(&descriptorCount, &mapKey, &descriptorSize, &descriptorVersion);
+
+    if (!memoryMap)
+    {
+        printf("Failed to retrieve memory map!\n");
+        return EFI_OUT_OF_RESOURCES;
+    }
+
+    // Map runtime services to this Virtual Memory Address (vma)
+    bool mappedAnything = false;
+    physaddr_t vma = 0x80000000;
+
+    EFI_MEMORY_DESCRIPTOR* descriptor = memoryMap;
+    for (UINTN i = 0; i != descriptorCount; ++i, descriptor = NextMemoryDescriptor(descriptor, descriptorSize))
+    {
+        if (descriptor->Attribute & EFI_MEMORY_RUNTIME)
+        {
+            //const physaddr_t start = descriptor->PhysicalStart;
+            const physaddr_t size = descriptor->NumberOfPages * EFI_PAGE_SIZE;
+            //const physaddr_t end = start + size;
+
+            descriptor->VirtualStart = vma;
+            mappedAnything = true;
+
+            vma = vma + size;
+        }
+    }
+
+//TODO
+    (void)hImage;
+    // EFI_STATUS status = BS->ExitBootServices(hImage, mapKey);
+    // if (EFI_ERROR(status))
+    // {
+    //     printf("Failed to exit boot services: %08x\n", (int)status);
+    //     return status;
+    // }
+
+    if (mappedAnything)
+    {
+        EFI_STATUS status = RT->SetVirtualAddressMap(descriptorCount * descriptorSize, descriptorSize, descriptorVersion, memoryMap);
+        if (EFI_ERROR(status))
+        {
+            printf("Failed to set virtual address map: %08x\n", (int)status);
+            return status;
+        }
+    }
+
+    FreePool(memoryMap);
+
+    return EFI_SUCCESS;
+}
+
+
+
 static EFI_STATUS BuildMemoryMap()
 {
     new (&g_memoryMap) MemoryMap();
@@ -168,7 +230,7 @@ static EFI_STATUS BuildMemoryMap()
     if (!memoryMap)
     {
         printf("Failed to retrieve memory map!\n");
-        return EFI_LOAD_ERROR;
+        return EFI_OUT_OF_RESOURCES;
     }
 
     EFI_MEMORY_DESCRIPTOR* descriptor = memoryMap;
@@ -184,11 +246,18 @@ static EFI_STATUS BuildMemoryMap()
 
         case EfiLoaderCode:
         case EfiLoaderData:
-        case EfiBootServicesCode:
-        case EfiBootServicesData:
         case EfiConventionalMemory:
             if (descriptor->Attribute & EFI_MEMORY_WB)
                 type = MemoryType_Available;
+            else
+                type = MemoryType_Reserved;
+            break;
+
+        case EfiBootServicesCode:
+        case EfiBootServicesData:
+            // Work around buggy firmware that call boot services after we exited them.
+            if (descriptor->Attribute & EFI_MEMORY_WB)
+                type = MemoryType_Bootloader;
             else
                 type = MemoryType_Reserved;
             break;
@@ -219,6 +288,8 @@ static EFI_STATUS BuildMemoryMap()
 
         g_memoryMap.AddEntry(type, start, end);
     }
+
+    FreePool(memoryMap);
 
     // Now account for the bootloader modules
     for (Modules::const_iterator module = g_modules.begin(); module != g_modules.end(); ++module)
@@ -263,6 +334,8 @@ static EFI_STATUS Boot(EFI_HANDLE hImage)
         printf("Could not retrieve memory map");
         return status;
     }
+
+    ExitBootServices(hImage);
 
     return EFI_SUCCESS;
 }

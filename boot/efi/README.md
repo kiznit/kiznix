@@ -15,17 +15,27 @@ EfiBootServicesData instead. It does mean that we can't identify our own
 allocations when walking the memory map, which is rather unfortunate.
 
 
-2) SetVirtualMemoryMap() calling into EFI Boot Services.
+2) SetVirtualAddressMap() calling into EFI Boot Services.
 --------------------------------------------------------
 
-Once you call ExitBootServices(), you should still be able to call the
-EFI Runtime Services functions, such as SetVirtualMemoryMap(). Multiple
-firmware are buggy and will crash when you do so. The only "workaround"
-is to call SetVirtualMemoryMap() to remap the EFI Runtime Services
-memory before exiting the EFI Boot Services.
+You cannot call SetVirtualAddressMap() before you call ExitBootServices().
+If you try, you will get the EFI_UNSUPPORTED error.
+
+SetVirtualAddressMap() is now supposed to call into boot services, but
+of course it does. So you have to make sure you keep the boot services
+memory around while calling SetVirtualAddressMap().
 
 
-3) Writing UEFI variables will brick some machines.
+3) Continuous runtime services memory must be allocated continuously
+--------------------------------------------------------------------
+
+If the memory map returned by the firmware contains multiple descriptors
+containing continuous memory for run time services, they must be mapped
+continuously into virtual memory. In theory this isn't required, but of
+course some firmware do it wrong.
+
+
+4) Writing UEFI variables will brick some machines.
 ---------------------------------------------------
 
 This has been reported for some Samsung laptops. Details can be found
