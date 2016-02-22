@@ -28,6 +28,16 @@ OUTPUT_FORMAT(elf32-i386)
 ENTRY(_start)
 
 
+
+PHDRS
+{
+    segment_text PT_LOAD;
+    segment_rodata PT_LOAD;
+    segment_data PT_LOAD;
+}
+
+
+
 SECTIONS
 {
     . = 1M;
@@ -38,22 +48,31 @@ SECTIONS
     {
         *(.multiboot)   /* Make sure the multiboot headers are at the beginning of the image */
         *(.text)
-    }
+    } : segment_text
 
     .rodata :
     {
         *(.rodata*)
-    }
+
+        _init_array_start = .;
+        *(.ctors)
+        _init_array_end = .;
+
+        _fini_array_start = .;
+        *(.dtors)
+        _fini_array_end = .;
+
+    } : segment_rodata
 
     .data :
     {
         *(.data*)
-    }
+    } : segment_data
 
     .bss :
     {
         *(.bss)
-    }
+    } : segment_data
 
     /DISCARD/ :
     {

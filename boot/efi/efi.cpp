@@ -37,9 +37,6 @@ extern "C"
 #include "module.hpp"
 
 
-// Placement new
-void* operator new(size_t, void* where) { return where; }
-
 static MemoryMap g_memoryMap;
 static Modules g_modules;
 
@@ -132,8 +129,6 @@ static EFI_STATUS LoadModule(EFI_HANDLE hDevice, const wchar_t* szPath, const ch
 
 static EFI_STATUS LoadModules(EFI_HANDLE hDevice)
 {
-    new (&g_modules) Modules();
-
     EFI_STATUS status;
 
     status = LoadModule(hDevice, L"\\kiznix\\startos", "/kiznix/startos");
@@ -218,8 +213,6 @@ static EFI_STATUS ExitBootServices(EFI_HANDLE hImage)
 
 static EFI_STATUS BuildMemoryMap()
 {
-    new (&g_memoryMap) MemoryMap();
-
     UINTN descriptorCount;
     UINTN mapKey;
     UINTN descriptorSize;
@@ -342,6 +335,39 @@ static EFI_STATUS Boot(EFI_HANDLE hImage)
 
 
 
+static void call_global_constructors()
+{
+    extern void (*__CTOR_LIST__[])();
+
+    uintptr_t count = (uintptr_t) __CTOR_LIST__[0];
+
+    if (count == (uintptr_t)-1)
+    {
+        count = 0;
+        while (__CTOR_LIST__[count + 1])
+            ++count;
+    }
+
+    for (uintptr_t i = count; i >= 1; --i)
+    {
+        __CTOR_LIST__[i]();
+    }
+}
+
+
+
+static void call_global_destructors()
+{
+    extern void (*__DTOR_LIST__[])();
+
+    for (void (**p)() = __DTOR_LIST__ + 1; *p; ++p)
+    {
+        (*p)();
+    }
+}
+
+
+
 extern "C" EFI_STATUS efi_main(EFI_HANDLE hImage, EFI_SYSTEM_TABLE* systemTable)
 {
     InitializeLib(hImage, systemTable);
@@ -349,6 +375,8 @@ extern "C" EFI_STATUS efi_main(EFI_HANDLE hImage, EFI_SYSTEM_TABLE* systemTable)
     InitConsole(ST->ConOut);
 
     printf("Kiznix EFI Bootloader (" STRINGIZE(ARCH) ")\n\n", (int)sizeof(void*)*8);
+
+    call_global_constructors();
 
     EFI_STATUS status = Boot(hImage);
 
@@ -367,6 +395,8 @@ extern "C" EFI_STATUS efi_main(EFI_HANDLE hImage, EFI_SYSTEM_TABLE* systemTable)
     }
 
     getchar();
+
+    call_global_destructors();
 
     return status;
 }

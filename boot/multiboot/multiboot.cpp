@@ -40,9 +40,6 @@
 #include "module.hpp"
 
 
-// Placement new
-void* operator new(size_t, void* where) { return where; }
-
 static MemoryMap g_memoryMap;
 static Modules g_modules;
 
@@ -390,12 +387,37 @@ static void Boot(int multibootVersion)
 
 
 
+static void call_global_constructors()
+{
+    extern void (*_init_array_start[])();
+    extern void (*_init_array_end[])();
+
+    for (void (**p)() = _init_array_start; p != _init_array_end; ++p)
+    {
+        (*p)();
+    }
+}
+
+
+
+static void call_global_destructors()
+{
+    extern void (*_fini_array_start[])();
+    extern void (*_fini_array_end[])();
+
+    for (void (**p)() = _fini_array_start; p != _fini_array_end; ++p)
+    {
+        (*p)();
+    }
+}
+
+
+
 extern "C" void multiboot_main(unsigned int magic, void* mbi)
 {
     console_init();
 
-    new (&g_memoryMap) MemoryMap();
-    new (&g_modules) Modules();
+    call_global_constructors();
 
     printf("Kiznix Multiboot Bootloader\n\n");
 
@@ -417,4 +439,6 @@ extern "C" void multiboot_main(unsigned int magic, void* mbi)
     {
         printf("No multiboot information!\n");
     }
+
+    call_global_destructors();
 }
