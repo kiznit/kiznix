@@ -389,12 +389,20 @@ static void Boot(int multibootVersion)
 
 static void call_global_constructors()
 {
-    extern void (*_init_array_start[])();
-    extern void (*_init_array_end[])();
+    extern void (*__CTOR_LIST__[])();
 
-    for (void (**p)() = _init_array_start; p != _init_array_end; ++p)
+    uintptr_t count = (uintptr_t) __CTOR_LIST__[0];
+
+    if (count == (uintptr_t)-1)
     {
-        (*p)();
+        count = 0;
+        while (__CTOR_LIST__[count + 1])
+            ++count;
+    }
+
+    for (uintptr_t i = count; i >= 1; --i)
+    {
+        __CTOR_LIST__[i]();
     }
 }
 
@@ -402,10 +410,9 @@ static void call_global_constructors()
 
 static void call_global_destructors()
 {
-    extern void (*_fini_array_start[])();
-    extern void (*_fini_array_end[])();
+    extern void (*__DTOR_LIST__[])();
 
-    for (void (**p)() = _fini_array_start; p != _fini_array_end; ++p)
+    for (void (**p)() = __DTOR_LIST__ + 1; *p; ++p)
     {
         (*p)();
     }

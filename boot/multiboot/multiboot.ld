@@ -54,13 +54,10 @@ SECTIONS
     {
         *(.rodata*)
 
-        _init_array_start = .;
-        *(.ctors)
-        _init_array_end = .;
-
-        _fini_array_start = .;
-        *(.dtors)
-        _fini_array_end = .;
+        __CTOR_LIST__ = . ;
+        LONG (-1);*(.ctors); *(.ctor); *(SORT(.ctors.*));  LONG (0);
+        __DTOR_LIST__ = . ;
+         LONG (-1); *(.dtors); *(.dtor); *(SORT(.dtors.*));  LONG (0);
 
     } : segment_rodata
 
