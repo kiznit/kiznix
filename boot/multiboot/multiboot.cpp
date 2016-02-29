@@ -316,6 +316,63 @@ static int LoadElf32(const void* file)
         }
     }
 
+    // Relocations
+    const char* shdr_base = file_base + ehdr->e_shoff;
+
+    for (int i = 0; i != ehdr->e_shnum; ++i)
+    {
+        const Elf32_Shdr* shdr = (const Elf32_Shdr*)(shdr_base + i * ehdr->e_shentsize);
+
+        if (shdr->sh_type != SHT_REL)
+            continue;
+
+        printf("Section %2d: type: %5d, addr: %08x, offset: %08x, size: %05x, entsize: %08x\n", i,
+            (int)shdr->sh_type, (int)shdr->sh_addr, (int)shdr->sh_offset, (int)shdr->sh_size, (int)shdr->sh_entsize);
+
+        const Elf32_Shdr* symbols_section = (const Elf32_Shdr*)(shdr_base + shdr->sh_link * ehdr->e_shentsize);
+        const char* symbols_base = file_base + symbols_section->sh_offset;
+
+        const char* rel_base = file_base + shdr->sh_offset;
+
+        for (int j = 0; j != (int)(shdr->sh_size / shdr->sh_entsize); ++j)
+        {
+            const Elf32_Rel* rel = (const Elf32_Rel*)(rel_base + j * shdr->sh_entsize);
+
+            const int sym = ELF32_R_SYM(rel->r_info);
+            const int type = ELF32_R_TYPE(rel->r_info);
+
+            const Elf32_Sym* symbol = (const Elf32_Sym*)(symbols_base + sym * symbols_section->sh_entsize);
+
+            printf("    %d: %08x %08x, type: %d, sym: %d, symbol.value: %08x\n", j, (int)rel->r_offset, (int)rel->r_info, type, sym, (int)symbol->st_value);
+
+            switch (type)
+            {
+            case R_386_32:
+                // Symbol value + addend
+                *(uint32_t*)(memory + rel->r_offset) += symbol->st_value;
+                break;
+
+            case R_386_RELATIVE:
+                // Base address + addend
+                *(uint32_t*)(memory + rel->r_offset) += (uintptr_t)memory;
+                break;
+
+            default:
+                printf("Unknown relocation type %d!\n", type);
+                break;
+            }
+        }
+    }
+
+    // TEMP: execute startos to see that it works properly
+    const char* (*entry)() = (const char* (*)())(memory + ehdr->e_entry);
+
+    printf("ENTRY AT %p\n", entry);
+    const char* result = entry();
+
+    printf("RESULT: %p\n", result);
+    printf("Which is: '%s'\n", result);
+
     return 0;
 }
 

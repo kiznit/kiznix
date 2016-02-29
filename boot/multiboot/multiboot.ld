@@ -31,9 +31,9 @@ ENTRY(_start)
 
 PHDRS
 {
-    segment_text PT_LOAD;
-    segment_rodata PT_LOAD;
-    segment_data PT_LOAD;
+    text PT_LOAD;
+    rodata PT_LOAD;
+    data PT_LOAD;
 }
 
 
@@ -48,7 +48,7 @@ SECTIONS
     {
         *(.multiboot)   /* Make sure the multiboot headers are at the beginning of the image */
         *(.text)
-    } : segment_text
+    } : text
 
     .rodata :
     {
@@ -59,17 +59,17 @@ SECTIONS
         __DTOR_LIST__ = . ;
         LONG (-1); *(.dtors); *(.dtor); *(SORT(.dtors.*)); LONG (0);
 
-    } : segment_rodata
+    } : rodata
 
     .data :
     {
         *(.data*)
-    } : segment_data
+    } : data
 
     .bss :
     {
         *(.bss)
-    } : segment_data
+    } : data
 
     /DISCARD/ :
     {

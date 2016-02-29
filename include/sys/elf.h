@@ -143,13 +143,36 @@ typedef struct
     Section header
 */
 
-#define SHN_UNDEF 0
-#define SHN_LOPROC 0xff00
-#define SHN_HIPROC 0xff1f
-#define SHN_LOOS 0xff20
-#define SHN_HIOS 0xff3f
-#define SHN_ABS 0xfff1
-#define SHN_COMMON 0xfff2
+#define SHT_NULL        0
+#define SHT_PROGBITS    1
+#define SHT_SYMTAB      2
+#define SHT_STRTAB      3
+#define SHT_RELA        4
+#define SHT_HASH        5
+#define SHT_DYNAMIC     6
+#define SHT_NOTE        7
+#define SHT_NOBITS      8
+#define SHT_REL         9
+#define SHT_SHLIB       10
+#define SHT_DYNSYM      11
+#define SHT_NUM         12
+#define SHT_LOPROC      0x70000000
+#define SHT_HIPROC      0x7fffffff
+#define SHT_LOUSER      0x80000000
+#define SHT_HIUSER      0xffffffff
+
+#define SHF_WRITE       0x1
+#define SHF_ALLOC       0x2
+#define SHF_EXECINSTR   0x4
+#define SHF_MASKPROC    0xf0000000
+
+#define SHN_UNDEF       0
+#define SHN_LOPROC      0xff00
+#define SHN_HIPROC      0xff1f
+#define SHN_LOOS        0xff20
+#define SHN_HIOS        0xff3f
+#define SHN_ABS         0xfff1
+#define SHN_COMMON      0xfff2
 
 typedef struct
 {
@@ -286,6 +309,56 @@ typedef struct
 
 } Elf64_Dyn;
 
+
+
+/*
+    Relocations
+*/
+
+#define R_386_NONE      0
+#define R_386_32        1
+#define R_386_PC32      2
+#define R_386_GOT32     3
+#define R_386_PLT32     4
+#define R_386_COPY      5
+#define R_386_GLOB_DAT  6
+#define R_386_JMP_SLOT  7
+#define R_386_RELATIVE  8
+#define R_386_GOTOFF    9
+#define R_386_GOTPC     10
+#define R_386_NUM       11
+
+#define ELF32_R_SYM(info) ((info) >> 8)
+#define ELF32_R_TYPE(info) ((uint8_t)(info))
+#define ELF32_R_INFO(sym, type) (((sym) << 8) + (uint8_t)(type))
+
+typedef struct
+{
+    uint32_t r_offset;
+    uint32_t r_info;
+
+} Elf32_Rel;
+
+
+typedef struct
+{
+    uint32_t r_offset;
+    uint32_t r_info;
+    int32_t  r_addend;
+
+} Elf32_Rela;
+
+
+typedef struct
+{
+    uint32_t    st_name;
+    uint32_t    st_value;
+    uint32_t    st_size;
+    uint8_t     st_info;
+    uint8_t     st_other;
+    uint16_t    st_shndx;
+
+} Elf32_Sym;
 
 
 #endif

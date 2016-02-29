@@ -38,7 +38,7 @@ PHDRS
 
 SECTIONS
 {
-    . = 0xC0000000;
+    . = 0;
 
     .text BLOCK(4K) :
     {
