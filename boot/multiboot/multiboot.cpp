@@ -352,6 +352,11 @@ static int LoadElf32(const void* file)
                 *(uint32_t*)(memory + rel->r_offset) += symbol->st_value;
                 break;
 
+            case R_386_GLOB_DAT:
+                // Symbol value
+                *(uint32_t*)(memory + rel->r_offset) = symbol->st_value;
+                break;
+
             case R_386_RELATIVE:
                 // Base address + addend
                 *(uint32_t*)(memory + rel->r_offset) += (uintptr_t)memory;
