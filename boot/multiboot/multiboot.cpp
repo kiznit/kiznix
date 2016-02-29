@@ -349,17 +349,17 @@ static int LoadElf32(const void* file)
             {
             case R_386_32:
                 // Symbol value + addend
-                *(uint32_t*)(memory + rel->r_offset) += symbol->st_value;
+                *(uint32_t*)(memory + rel->r_offset) += symbol->st_value + (uint32_t)memory;
                 break;
 
             case R_386_GLOB_DAT:
                 // Symbol value
-                *(uint32_t*)(memory + rel->r_offset) = symbol->st_value;
+                *(uint32_t*)(memory + rel->r_offset) = symbol->st_value + (uint32_t)memory;
                 break;
 
             case R_386_RELATIVE:
                 // Base address + addend
-                *(uint32_t*)(memory + rel->r_offset) += (uintptr_t)memory;
+                *(uint32_t*)(memory + rel->r_offset) += (uint32_t)memory;
                 break;
 
             default:
@@ -370,13 +370,14 @@ static int LoadElf32(const void* file)
     }
 
     // TEMP: execute Launcher to see that it works properly
-    const char* (*entry)() = (const char* (*)())(memory + ehdr->e_entry);
+    const char* (*entry)(char**) = (const char* (*)(char**))(memory + ehdr->e_entry);
 
     printf("ENTRY AT %p\n", entry);
-    const char* result = entry();
+    char* out;
+    const char* result = entry(&out);
 
-    printf("RESULT: %p\n", result);
-    printf("Which is: '%s'\n", result);
+    printf("RESULT: %p, out: %p\n", result, out);
+    printf("Which is: '%s', [%d, %d, %d, ..., %d]\n", result, out[0], out[1], out[2], out[99]);
 
     return 0;
 }

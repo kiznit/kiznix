@@ -31,12 +31,14 @@ char data2[] = { 1,2,3,4,5,6,7,8,9,10 };
 
 
 // Launcher entry point
-extern "C" const char* launcher_main()
+extern "C" const char* launcher_main(char** out)
 {
     for (int i = 0; i!= 100; ++i)
     {
         data[i] = i;
     }
+
+    *out = data;
 
     return "abcdef";
 }
