@@ -24,45 +24,19 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-OUTPUT_FORMAT(elf32-i386)
-ENTRY(startos_main)
+char data[100];
+
+char data2[] = { 1,2,3,4,5,6,7,8,9,10 };
 
 
-PHDRS
+
+// Launcher entry point
+extern "C" const char* launcher_main()
 {
-    text PT_LOAD;
-    rodata PT_LOAD;
-    data PT_LOAD;
-}
-
-
-SECTIONS
-{
-    . = 0;
-
-    .text BLOCK(4K) :
+    for (int i = 0; i!= 100; ++i)
     {
-        *(.text)
-    } : text
-
-    .rodata BLOCK(4K) :
-    {
-        *(.rodata*)
-    } : rodata
-
-    .data BLOCK(4K) :
-    {
-        *(.data*)
-    } : data
-
-    .bss :
-    {
-        *(.bss)
-    } : data
-
-    /DISCARD/ :
-    {
-        *(.comment)
-        *(.eh_frame)
+        data[i] = i;
     }
+
+    return "abcdef";
 }

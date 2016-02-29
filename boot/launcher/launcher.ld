@@ -24,19 +24,45 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-char data[100];
-
-char data2[] = { 1,2,3,4,5,6,7,8,9,10 };
-
+OUTPUT_FORMAT(elf32-i386)
+ENTRY(launcher_main)
 
 
-// StartOS entry point
-extern "C" const char* startos_main()
+PHDRS
 {
-    for (int i = 0; i!= 100; ++i)
-    {
-        data[i] = i;
-    }
+    text PT_LOAD;
+    rodata PT_LOAD;
+    data PT_LOAD;
+}
 
-    return "abcdef";
+
+SECTIONS
+{
+    . = 0;
+
+    .text BLOCK(4K) :
+    {
+        *(.text)
+    } : text
+
+    .rodata BLOCK(4K) :
+    {
+        *(.rodata*)
+    } : rodata
+
+    .data BLOCK(4K) :
+    {
+        *(.data*)
+    } : data
+
+    .bss :
+    {
+        *(.bss)
+    } : data
+
+    /DISCARD/ :
+    {
+        *(.comment)
+        *(.eh_frame)
+    }
 }

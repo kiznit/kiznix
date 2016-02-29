@@ -131,7 +131,7 @@ static EFI_STATUS LoadModules(EFI_HANDLE hDevice)
 {
     EFI_STATUS status;
 
-    status = LoadModule(hDevice, L"\\kiznix\\startos", "/kiznix/startos");
+    status = LoadModule(hDevice, L"\\kiznix\\launcher", "/kiznix/launcher");
     if (EFI_ERROR(status))
         return status;
 

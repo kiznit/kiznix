@@ -364,7 +364,7 @@ static int LoadElf32(const void* file)
         }
     }
 
-    // TEMP: execute startos to see that it works properly
+    // TEMP: execute Launcher to see that it works properly
     const char* (*entry)() = (const char* (*)())(memory + ehdr->e_entry);
 
     printf("ENTRY AT %p\n", entry);
@@ -378,36 +378,36 @@ static int LoadElf32(const void* file)
 
 
 
-static int LoadStartOS()
+static int LoadLauncher()
 {
-    const ModuleInfo* startos = NULL;
+    const ModuleInfo* launcher = NULL;
 
     for (Modules::const_iterator module = g_modules.begin(); module != g_modules.end(); ++module)
     {
         //todo: use case insensitive strcmp
-        if (strcmp(module->name, "/kiznix/startos") == 0)
+        if (strcmp(module->name, "/kiznix/launcher") == 0)
         {
-            startos = module;
+            launcher = module;
             break;
         }
     }
 
-    if (!startos)
+    if (!launcher)
     {
-        printf("Module not found: startos");
+        printf("Module not found: launcher");
         return -1;
     }
 
-    if (startos->end > 0x100000000)
+    if (launcher->end > 0x100000000)
     {
-        printf("Module startos is in high memory (>4 GB) and can't be loaded");
+        printf("Module launcher is in high memory (>4 GB) and can't be loaded");
         return -1;
     }
 
-    int result = LoadElf32((void*)startos->start);
+    int result = LoadElf32((void*)launcher->start);
     if (result < 0)
     {
-        printf("Failed to load startos");
+        printf("Failed to load launcher");
         return result;
     }
 
@@ -438,7 +438,7 @@ static void Boot(int multibootVersion)
     putchar('\n');
     g_modules.Print();
 
-    if (LoadStartOS() !=0)
+    if (LoadLauncher() !=0)
         return;
 }
 
