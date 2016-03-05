@@ -29,13 +29,12 @@
 #include <string.h>
 #include <cpuid.h>
 
-#include <sys/elf.h>
-
 #include "console.hpp"
 
 #include "multiboot.h"
 #include "multiboot2.h"
 
+#include "elf.hpp"
 #include "memory.hpp"
 #include "module.hpp"
 
@@ -238,143 +237,37 @@ static void ProcessMultibootInfo(multiboot2_info const * const mbi)
 
 
 
-static int LoadElf32(const void* file)
+static int LoadElf32(const char* file, size_t size)
 {
-    const char* file_base = (const char*)file;
-    const Elf32_Ehdr* ehdr = (const Elf32_Ehdr*)file_base;
+    ElfLoader elf(file, size);
 
-    if (ehdr->e_ident[EI_MAG0] != ELFMAG0 || ehdr->e_ident[EI_MAG1] != ELFMAG1 ||
-        ehdr->e_ident[EI_MAG2] != ELFMAG2 || ehdr->e_ident[EI_MAG3] != ELFMAG3 ||
-        ehdr->e_ident[EI_DATA] != ELFDATA2LSB)
+    if (!elf.Valid())
     {
+        printf("Invalid ELF file");
         return -1;
     }
 
-    if (ehdr->e_ident[EI_CLASS] != ELFCLASS32 ||
-        ehdr->e_machine != EM_386 ||
-        ehdr->e_version  != EV_CURRENT)
+    if (elf.GetMemoryAlignment() > MEMORY_PAGE_SIZE)
     {
+        printf("ELF aligment not supported");
         return -2;
     }
 
-    const char* phdr_base = file_base + ehdr->e_phoff;
-
-    // Calculate how much memory we need to load this ELF
-    uint32_t start = 0xFFFFFFFF;
-    uint32_t end = 0;
-    uint32_t align = 1;
-
-    for (int i = 0; i != ehdr->e_phnum; ++i)
-    {
-        const Elf32_Phdr* phdr = (const Elf32_Phdr*)(phdr_base + i * ehdr->e_phentsize);
-
-        if (phdr->p_type != PT_LOAD)
-            continue;
-
-        if (phdr->p_paddr < start)
-            start = phdr->p_paddr;
-
-        if (phdr->p_paddr + phdr->p_memsz > end)
-            end = phdr->p_paddr + phdr->p_memsz;
-
-        if (phdr->p_align > align)
-            align = phdr->p_align;
-    }
-
-    if (start > end)
-    {
-        return -3;
-    }
-
-    printf("ELF: %08lx - %08lx, align %08lx\n", (long)start, (long)end, (long)align);
-
-    // Allocate memory
-    char* memory = (char*) g_memoryMap.Alloc(MemoryZone_Normal, MemoryType_Unusable, end - start);
+    // Allocate memory (we ignore alignment here and assume it is 4096 or less)
+    char* memory = (char*) g_memoryMap.Alloc(MemoryZone_Normal, MemoryType_Unusable, elf.GetMemorySize());
 
     printf("Memory allocated at %p\n", memory);
 
-    // Load ELF
-    for (int i = 0; i != ehdr->e_phnum; ++i)
-    {
-        const Elf32_Phdr* phdr = (const Elf32_Phdr*)(phdr_base + i * ehdr->e_phentsize);
 
-        if (phdr->p_type != PT_LOAD)
-            continue;
-
-        if (phdr->p_filesz != 0)
-        {
-            const char* src = file_base + phdr->p_offset;
-            void* dst = memory + (phdr->p_paddr - start);
-            memcpy(dst, src, phdr->p_filesz);
-        }
-
-        if (phdr->p_memsz > phdr->p_filesz)
-        {
-            void* dst = memory + (phdr->p_paddr - start) + phdr->p_filesz;
-            const size_t count = phdr->p_memsz - phdr->p_filesz;
-            memset(dst, 0, count);
-        }
-    }
-
-    // Relocations
-    const char* shdr_base = file_base + ehdr->e_shoff;
-
-    for (int i = 0; i != ehdr->e_shnum; ++i)
-    {
-        const Elf32_Shdr* shdr = (const Elf32_Shdr*)(shdr_base + i * ehdr->e_shentsize);
-
-        if (shdr->sh_type != SHT_REL)
-            continue;
-
-        printf("Section %2d: type: %5d, addr: %08x, offset: %08x, size: %05x, entsize: %08x\n", i,
-            (int)shdr->sh_type, (int)shdr->sh_addr, (int)shdr->sh_offset, (int)shdr->sh_size, (int)shdr->sh_entsize);
-
-        const Elf32_Shdr* symbols_section = (const Elf32_Shdr*)(shdr_base + shdr->sh_link * ehdr->e_shentsize);
-        const char* symbols_base = file_base + symbols_section->sh_offset;
-
-        const char* rel_base = file_base + shdr->sh_offset;
-
-        for (int j = 0; j != (int)(shdr->sh_size / shdr->sh_entsize); ++j)
-        {
-            const Elf32_Rel* rel = (const Elf32_Rel*)(rel_base + j * shdr->sh_entsize);
-
-            const int sym = ELF32_R_SYM(rel->r_info);
-            const int type = ELF32_R_TYPE(rel->r_info);
-
-            const Elf32_Sym* symbol = (const Elf32_Sym*)(symbols_base + sym * symbols_section->sh_entsize);
-
-            printf("    %d: %08x %08x, type: %d, sym: %d, symbol.value: %08x\n", j, (int)rel->r_offset, (int)rel->r_info, type, sym, (int)symbol->st_value);
-
-            switch (type)
-            {
-            case R_386_32:
-                // Symbol value + addend
-                *(uint32_t*)(memory + rel->r_offset) += symbol->st_value + (uint32_t)memory;
-                break;
-
-            case R_386_GLOB_DAT:
-                // Symbol value
-                *(uint32_t*)(memory + rel->r_offset) = symbol->st_value + (uint32_t)memory;
-                break;
-
-            case R_386_RELATIVE:
-                // Base address + addend
-                *(uint32_t*)(memory + rel->r_offset) += (uint32_t)memory;
-                break;
-
-            default:
-                printf("Unknown relocation type %d!\n", type);
-                break;
-            }
-        }
-    }
-
-    // TEMP: execute Launcher to see that it works properly
-    const char* (*entry)(char**) = (const char* (*)(char**))(memory + ehdr->e_entry);
+    void* entry = elf.Load(memory);
 
     printf("ENTRY AT %p\n", entry);
+
+
+    // TEMP: execute Launcher to see that it works properly
+    const char* (*launcher_main)(char**) = (const char* (*)(char**))(entry);
     char* out;
-    const char* result = entry(&out);
+    const char* result = launcher_main(&out);
 
     printf("RESULT: %p, out: %p\n", result, out);
     printf("Which is: '%s', [%d, %d, %d, ..., %d]\n", result, out[0], out[1], out[2], out[99]);
@@ -410,7 +303,7 @@ static int LoadLauncher()
         return -1;
     }
 
-    int result = LoadElf32((void*)launcher->start);
+    int result = LoadElf32((char*)launcher->start, launcher->end - launcher->start);
     if (result < 0)
     {
         printf("Failed to load launcher");
@@ -444,7 +337,7 @@ static void Boot(int multibootVersion)
     putchar('\n');
     g_modules.Print();
 
-    if (LoadLauncher() !=0)
+    if (LoadLauncher() != 0)
         return;
 }
 

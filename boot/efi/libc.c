@@ -208,6 +208,18 @@ void* memset(void* memory, int value, size_t count)
 
 
 
+int strcmp(const char* string1, const char* string2)
+{
+    while (*string1 && *string1 == *string2)
+    {
+        ++string1;
+        ++string2;
+    }
+
+    return *(const unsigned char*)string1 - *(const unsigned char*)string2;
+}
+
+
 char* strncpy(char* destination, const char* source, size_t count)
 {
     size_t i;

@@ -24,24 +24,52 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef INCLUDED_EFI_STRING_H
-#define INCLUDED_EFI_STRING_H
+#ifndef INCLUDED_BOOT_COMMON_ELF_HPP
+#define INCLUDED_BOOT_COMMON_ELF_HPP
 
 #include <stddef.h>
+#include <sys/elf.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
-void* memcpy(void* destination, const void* source, size_t count);
-void* memset(void* memory, int value, size_t count);
 
-int strcmp(const char*, const char *);
+class ElfLoader
+{
+public:
 
-char* strncpy(char* destination, const char* source, size_t count);
+    ElfLoader(const char* elfImage, size_t elfImageSize);
 
-#ifdef __cplusplus
-}
-#endif
+    // Is this a valid ELF file?
+    bool Valid() const                      { return m_ehdr != NULL; }
+
+    // Return the memory size required to load this ELF
+    uint32_t GetMemorySize() const          { return m_endAddress - m_startAddress; }
+
+    // Return the memory alignment required to load this ELF
+    uint32_t GetMemoryAlignment() const     { return m_alignment; }
+
+    // Load the ELF file, return the entry point
+    void* Load(char* memory);
+
+
+
+private:
+
+    // Helpers
+    const Elf32_Phdr* GetProgramHeader(int index) const;
+    const Elf32_Shdr* GetSectionHeader(int index) const;
+
+    void LoadProgramHeaders(char* memory);
+    void ApplyRelocations(char* memory);
+
+    const char*         m_image;        // Start of file in memory
+    const size_t        m_imageSize;    // ELF file size
+    const Elf32_Ehdr*   m_ehdr;         // ELF file header
+
+    uint32_t            m_startAddress; // ELF start address
+    uint32_t            m_endAddress;   // ELF end address
+    uint32_t            m_alignment;    // ELF alignment
+};
+
+
 
 #endif

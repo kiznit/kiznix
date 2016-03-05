@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 extern "C"
 {
@@ -33,6 +34,7 @@ extern "C"
     #include <efilib.h>
 }
 
+#include "elf.hpp"
 #include "memory.hpp"
 #include "module.hpp"
 
@@ -297,6 +299,86 @@ static EFI_STATUS BuildMemoryMap()
 
 
 
+
+
+static int LoadElf32(const char* file, size_t size)
+{
+    ElfLoader elf(file, size);
+
+    if (!elf.Valid())
+    {
+        printf("Invalid ELF file");
+        return -1;
+    }
+
+    if (elf.GetMemoryAlignment() > MEMORY_PAGE_SIZE)
+    {
+        printf("ELF aligment not supported");
+        return -2;
+    }
+
+    // Allocate memory (we ignore alignment here and assume it is 4096 or less)
+    char* memory = (char*) g_memoryMap.Alloc(MemoryZone_Normal, MemoryType_Unusable, elf.GetMemorySize());
+
+    printf("Memory allocated at %x\n", memory);
+
+
+    void* entry = elf.Load(memory);
+
+    printf("ENTRY AT %x\n", entry);
+
+
+    // TEMP: execute Launcher to see that it works properly
+    const char* (*launcher_main)(char**) = (const char* (*)(char**))(entry);
+    char* out;
+    const char* result = launcher_main(&out);
+
+    printf("RESULT: %x, out: %x\n", result, out);
+    printf("Which is: '%s', [%d, %d, %d, ..., %d]\n", result, out[0], out[1], out[2], out[99]);
+
+    return 0;
+}
+
+
+
+static int LoadLauncher()
+{
+    const ModuleInfo* launcher = NULL;
+
+    for (Modules::const_iterator module = g_modules.begin(); module != g_modules.end(); ++module)
+    {
+        //todo: use case insensitive strcmp
+        if (strcmp(module->name, "/kiznix/launcher") == 0)
+        {
+            launcher = module;
+            break;
+        }
+    }
+
+    if (!launcher)
+    {
+        printf("Module not found: launcher");
+        return -1;
+    }
+
+    if (launcher->end > 0x100000000)
+    {
+        printf("Module launcher is in high memory (>4 GB) and can't be loaded");
+        return -1;
+    }
+
+    int result = LoadElf32((char*)launcher->start, launcher->end - launcher->start);
+    if (result < 0)
+    {
+        printf("Failed to load launcher");
+        return result;
+    }
+
+    return 0;
+}
+
+
+
 static EFI_STATUS Boot(EFI_HANDLE hImage)
 {
     EFI_STATUS status;
@@ -326,6 +408,17 @@ static EFI_STATUS Boot(EFI_HANDLE hImage)
     {
         printf("Could not retrieve memory map");
         return status;
+    }
+
+    putchar('\n');
+    g_memoryMap.Print();
+    putchar('\n');
+    g_modules.Print();
+
+    if (LoadLauncher() != 0)
+    {
+        printf("Failed to load Launcher");
+        return EFI_LOAD_ERROR;
     }
 
     ExitBootServices(hImage);
@@ -385,13 +478,6 @@ extern "C" EFI_STATUS efi_main(EFI_HANDLE hImage, EFI_SYSTEM_TABLE* systemTable)
         CHAR16 buffer[64];
         StatusToString(buffer, status);
         printf(": %s\n", buffer);
-    }
-    else
-    {
-        putchar('\n');
-        g_memoryMap.Print();
-        putchar('\n');
-        g_modules.Print();
     }
 
     getchar();
