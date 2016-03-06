@@ -75,6 +75,7 @@ int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
     unsigned long uval/*, uval2*/;
     const char *digits;
     char *string, *p = str;
+    wchar_t *wstring;
 
 #define PUTCH(ch) do {          \
     if ( size-- <= 0 )      \
@@ -467,6 +468,44 @@ int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
             PUTCH( c );
         } else {
         while ( (c = *string++) != '\0' )
+            PUTCH( c );
+        }
+
+        RIGHTPAD( width - numpr );
+        break;
+
+    /* Non-standard format 'w' to print wide strings */
+    /* TODO: properly handle code points above 127 */
+    case 'w':
+        wstring = va_arg( ap, wchar_t * );
+
+        /*
+         * Sanity check.
+         */
+        if ( wstring == NULL ) {
+        PUTSTR( "(null)" );
+        break;
+        }
+
+        if ( width > 0 ) {
+        /*
+         * Calculate printed size.
+         */
+        numpr = wcslen( wstring );
+        if ( precision >= 0 && precision < numpr )
+            numpr = precision;
+
+        LEFTPAD( width - numpr );
+        }
+
+        /*
+         * Insert string.
+         */
+        if ( precision >= 0 ) {
+        while ( precision-- > 0 && (c = *wstring++) != '\0' )
+            PUTCH( c );
+        } else {
+        while ( (c = *wstring++) != '\0' )
             PUTCH( c );
         }
 

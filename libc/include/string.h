@@ -24,6 +24,10 @@ char* strncpy(char*, const char*, size_t);
 char* strchr(const char* string, int character);
 size_t strlen(const char* string);
 
+
+size_t wcslen(const wchar_t* string);
+
+
 #ifdef __cplusplus
 }
 #endif
