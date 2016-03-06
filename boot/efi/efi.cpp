@@ -326,13 +326,13 @@ static int LoadElf32(const char* file, size_t size)
 
     if (!elf.Valid())
     {
-        printf("Invalid ELF file");
+        printf("Invalid ELF file\n");
         return -1;
     }
 
     if (elf.GetMemoryAlignment() > MEMORY_PAGE_SIZE)
     {
-        printf("ELF aligment not supported");
+        printf("ELF aligment not supported\n");
         return -2;
     }
 
@@ -389,7 +389,7 @@ static int LoadLauncher()
     int result = LoadElf32((char*)launcher->start, launcher->end - launcher->start);
     if (result < 0)
     {
-        printf("Failed to load launcher");
+        printf("Failed to load launcher\n");
         return result;
     }
 
@@ -418,14 +418,14 @@ static EFI_STATUS Boot(EFI_HANDLE hImage)
     status = LoadModules(bootLoaderImage->DeviceHandle);
     if (EFI_ERROR(status))
     {
-        printf("Could not load modules");
+        printf("Could not load modules\n");
         return status;
     }
 
     status = BuildMemoryMap();
     if (EFI_ERROR(status))
     {
-        printf("Could not retrieve memory map");
+        printf("Could not retrieve memory map\n");
         return status;
     }
 
@@ -436,7 +436,7 @@ static EFI_STATUS Boot(EFI_HANDLE hImage)
 
     if (LoadLauncher() != 0)
     {
-        printf("Failed to load Launcher");
+        printf("Failed to load Launcher\n");
         return EFI_LOAD_ERROR;
     }
 
@@ -524,7 +524,7 @@ extern "C" EFI_STATUS efi_main(EFI_HANDLE hImage, EFI_SYSTEM_TABLE* systemTable)
     {
         CHAR16 buffer[64];
         StatusToString(buffer, status);
-        printf(": %s\n", buffer);
+        printf("--> %w\n", buffer);
     }
 
     getchar();

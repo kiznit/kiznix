@@ -243,13 +243,13 @@ static int LoadElf32(const char* file, size_t size)
 
     if (!elf.Valid())
     {
-        printf("Invalid ELF file");
+        printf("Invalid ELF file\n");
         return -1;
     }
 
     if (elf.GetMemoryAlignment() > MEMORY_PAGE_SIZE)
     {
-        printf("ELF aligment not supported");
+        printf("ELF aligment not supported\n");
         return -2;
     }
 
@@ -293,20 +293,20 @@ static int LoadLauncher()
 
     if (!launcher)
     {
-        printf("Module not found: launcher");
+        printf("Module not found: launcher\n");
         return -1;
     }
 
     if (launcher->end > 0x100000000)
     {
-        printf("Module launcher is in high memory (>4 GB) and can't be loaded");
+        printf("Module launcher is in high memory (>4 GB) and can't be loaded\n");
         return -1;
     }
 
     int result = LoadElf32((char*)launcher->start, launcher->end - launcher->start);
     if (result < 0)
     {
-        printf("Failed to load launcher");
+        printf("Failed to load launcher\n");
         return result;
     }
 
