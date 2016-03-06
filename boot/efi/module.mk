@@ -23,8 +23,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 local_sources := \
-	efi.cpp \
-	libc.c
+	efi.cpp
 
 local_CFLAGS := -Wno-format
 local_CXXFLAGS := -Wno-format

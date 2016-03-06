@@ -47,6 +47,25 @@ static Modules g_modules;
 #define STRINGIZE(x) STRINGIZE_DELAY(x)
 
 
+extern "C" void __kiznix_putc(unsigned char c)
+{
+    if (!ST || !ST->ConOut)
+        return;
+
+    if (c == '\n')
+    {
+        CHAR16 string[3] = { '\r', '\n', '\0' };
+        ST->ConOut->OutputString(ST->ConOut, string);
+    }
+    else
+    {
+        CHAR16 string[2] = { c, '\0' };
+        ST->ConOut->OutputString(ST->ConOut, string);
+    }
+}
+
+
+
 static void InitConsole(SIMPLE_TEXT_OUTPUT_INTERFACE* conout)
 {
     // Mode 0 is 80x25 text mode and always supported
@@ -325,7 +344,7 @@ static int LoadElf32(const char* file, size_t size)
 
     void* entry = elf.Load(memory);
 
-    printf("ENTRY AT %x\n", entry);
+    printf("ENTRY AT %p\n", entry);
 
 
     // TEMP: execute Launcher to see that it works properly
@@ -333,7 +352,7 @@ static int LoadElf32(const char* file, size_t size)
     char* out;
     const char* result = launcher_main(&out);
 
-    printf("RESULT: %x, out: %x\n", result, out);
+    printf("RESULT: %p, out: %p\n", result, out);
     printf("Which is: '%s', [%d, %d, %d, ..., %d]\n", result, out[0], out[1], out[2], out[99]);
 
     return 0;
@@ -393,8 +412,8 @@ static EFI_STATUS Boot(EFI_HANDLE hImage)
         return status;
     }
 
-    printf("Boot device     : %s\n", DevicePathToStr(DevicePathFromHandle(bootLoaderImage->DeviceHandle)));
-    printf("Bootloader      : %s\n", DevicePathToStr(bootLoaderImage->FilePath));
+    printf("Boot device     : %w\n", DevicePathToStr(DevicePathFromHandle(bootLoaderImage->DeviceHandle)));
+    printf("Bootloader      : %w\n", DevicePathToStr(bootLoaderImage->FilePath));
 
     status = LoadModules(bootLoaderImage->DeviceHandle);
     if (EFI_ERROR(status))
@@ -456,6 +475,34 @@ static void call_global_destructors()
     for (void (**p)() = __DTOR_LIST__ + 1; *p; ++p)
     {
         (*p)();
+    }
+}
+
+
+static int getchar()
+{
+    for (;;)
+    {
+        EFI_STATUS status;
+
+        UINTN index;
+        status = ST->BootServices->WaitForEvent(1, &ST->ConIn->WaitForKey, &index);
+        if (EFI_ERROR(status))
+        {
+            return EOF;
+        }
+
+        EFI_INPUT_KEY key;
+        status = ST->ConIn->ReadKeyStroke(ST->ConIn, &key);
+        if (EFI_ERROR(status))
+        {
+            if (status == EFI_NOT_READY)
+                continue;
+
+            return EOF;
+        }
+
+        return key.UnicodeChar;
     }
 }
 
