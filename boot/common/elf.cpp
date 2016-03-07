@@ -239,7 +239,7 @@ Elf64Loader::Elf64Loader(const char* elfImage, size_t elfImageSize)
 
 
     // Calculate how much memory we need to load this ELF
-    uint64_t start = 0xFFFFFFFF;
+    uint64_t start = 0xFFFFFFFFFFFFFFFF;
     uint64_t end = 0;
     uint64_t align = 1;
 

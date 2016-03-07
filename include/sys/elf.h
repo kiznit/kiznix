@@ -408,7 +408,6 @@ typedef struct
   uint64_t      st_value;
   uint64_t      st_size;
 
-
 } Elf64_Sym;
 
 
