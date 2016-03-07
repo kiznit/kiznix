@@ -32,11 +32,11 @@
 
 
 
-class ElfLoader
+class Elf32Loader
 {
 public:
 
-    ElfLoader(const char* elfImage, size_t elfImageSize);
+    Elf32Loader(const char* elfImage, size_t elfImageSize);
 
     // Is this a valid ELF file?
     bool Valid() const                      { return m_ehdr != NULL; }
@@ -49,7 +49,6 @@ public:
 
     // Load the ELF file, return the entry point
     void* Load(char* memory);
-
 
 
 private:
@@ -68,6 +67,76 @@ private:
     uint32_t            m_startAddress; // ELF start address
     uint32_t            m_endAddress;   // ELF end address
     uint32_t            m_alignment;    // ELF alignment
+};
+
+
+
+class Elf64Loader
+{
+public:
+
+    Elf64Loader(const char* elfImage, size_t elfImageSize);
+
+    // Is this a valid ELF file?
+    bool Valid() const                      { return m_ehdr != NULL; }
+
+    // Return the memory size required to load this ELF
+    uint64_t GetMemorySize() const          { return m_endAddress - m_startAddress; }
+
+    // Return the memory alignment required to load this ELF
+    uint64_t GetMemoryAlignment() const     { return m_alignment; }
+
+    // Load the ELF file, return the entry point
+    void* Load(char* memory);
+
+
+private:
+
+    // Helpers
+    const Elf64_Phdr* GetProgramHeader(int index) const;
+    const Elf64_Shdr* GetSectionHeader(int index) const;
+
+    void LoadProgramHeaders(char* memory);
+    void ApplyRelocations(char* memory);
+
+    const char*         m_image;        // Start of file in memory
+    const size_t        m_imageSize;    // ELF file size
+    const Elf64_Ehdr*   m_ehdr;         // ELF file header
+
+    uint64_t            m_startAddress; // ELF start address
+    uint64_t            m_endAddress;   // ELF end address
+    uint64_t            m_alignment;    // ELF alignment
+};
+
+
+
+class ElfLoader
+{
+public:
+
+    ElfLoader(const char* elfImage, size_t elfImageSize)
+    :   m_elf32(elfImage, elfImageSize),
+        m_elf64(elfImage, elfImageSize)
+    {
+    }
+
+    // Is this a valid ELF file?
+    bool Valid() const                  { return m_elf32.Valid() || m_elf64.Valid(); }
+
+    // Return the memory size required to load this ELF
+    uint32_t GetMemorySize() const      { return m_elf32.Valid() ? m_elf32.GetMemorySize() : m_elf64.GetMemorySize(); }
+
+    // Return the memory alignment required to load this ELF
+    uint32_t GetMemoryAlignment() const { return m_elf32.Valid() ? m_elf32.GetMemoryAlignment() : m_elf64.GetMemoryAlignment(); }
+
+    // Load the ELF file, return the entry point
+    void* Load(char* memory)            { return m_elf32.Valid() ? m_elf32.Load(memory) : m_elf64.Load(memory); }
+
+
+private:
+
+    Elf32Loader m_elf32;
+    Elf64Loader m_elf64;
 };
 
 

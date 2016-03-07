@@ -328,9 +328,30 @@ typedef struct
 #define R_386_GOTPC     10
 #define R_386_NUM       11
 
-#define ELF32_R_SYM(info) ((info) >> 8)
-#define ELF32_R_TYPE(info) ((uint8_t)(info))
-#define ELF32_R_INFO(sym, type) (((sym) << 8) + (uint8_t)(type))
+#define R_X86_64_NONE       0
+#define R_X86_64_64         1
+#define R_X86_64_PC32       2
+#define R_X86_64_GOT32      3
+#define R_X86_64_PLT32      4
+#define R_X86_64_COPY       5
+#define R_X86_64_GLOB_DAT   6
+#define R_X86_64_JUMP_SLOT  7
+#define R_X86_64_RELATIVE   8
+#define R_X86_64_GOTPCREL   9
+#define R_X86_64_32         10
+#define R_X86_64_32S        11
+#define R_X86_64_16         12
+#define R_X86_64_PC16       13
+#define R_X86_64_8          14
+#define R_X86_64_PC8        15
+#define R_X86_64_NUM        16
+
+#define ELF32_R_SYM(info)       ((info) >> 8)
+#define ELF32_R_TYPE(info)      ((uint8_t)(info))
+
+#define ELF64_R_SYM(info)       ((info) >> 32)
+#define ELF64_R_TYPE(info)      ((uint32_t)(info))
+
 
 typedef struct
 {
@@ -338,6 +359,14 @@ typedef struct
     uint32_t r_info;
 
 } Elf32_Rel;
+
+
+typedef struct
+{
+    uint64_t r_offset;
+    uint64_t r_info;
+
+} Elf64_Rel;
 
 
 typedef struct
@@ -351,6 +380,15 @@ typedef struct
 
 typedef struct
 {
+    uint64_t r_offset;
+    uint64_t r_info;
+    int64_t r_addend;
+
+} Elf64_Rela;
+
+
+typedef struct
+{
     uint32_t    st_name;
     uint32_t    st_value;
     uint32_t    st_size;
@@ -359,6 +397,19 @@ typedef struct
     uint16_t    st_shndx;
 
 } Elf32_Sym;
+
+
+typedef struct
+{
+  uint32_t      st_name;
+  uint8_t       st_info;
+  uint8_t       st_other;
+  uint16_t      st_shndx;
+  uint64_t      st_value;
+  uint64_t      st_size;
+
+
+} Elf64_Sym;
 
 
 #endif

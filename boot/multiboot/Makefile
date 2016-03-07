@@ -33,6 +33,9 @@ MODULES := . ../common ../../libc
 $(eval $(call load-modules,$(MODULES)))
 
 
+libgcc_path := $(shell $(CC) -print-file-name=libgcc.a)
+
+
 # Grub is built with -march=i386, so we do the same
 CPPFLAGS	:= $(addprefix -I,$(GLOBAL_INCLUDES))
 CFLAGS		:= $(CFLAGS) -march=i386
@@ -46,7 +49,7 @@ all: $(BUILDDIR)/bin/multiboot
 
 $(BUILDDIR)/bin/multiboot: $(OBJECTS) multiboot.ld
 	@mkdir -p $(dir $@)
-	$(LD) $(LDFLAGS) $(OBJECTS) -o $@
+	$(LD) $(LDFLAGS) $(OBJECTS) $(libgcc_path) -o $@
 
 
 .PHONY: clean

@@ -322,7 +322,7 @@ static EFI_STATUS BuildMemoryMap()
 
 static int LoadElf32(const char* file, size_t size)
 {
-    ElfLoader elf(file, size);
+    Elf32Loader elf(file, size);
 
     if (!elf.Valid())
     {
@@ -348,7 +348,9 @@ static int LoadElf32(const char* file, size_t size)
 
 
     // TEMP: execute Launcher to see that it works properly
-    const char* (*launcher_main)(char**) = (const char* (*)(char**))(entry);
+    typedef const char* (*launcher_entry_t)(char**) __attribute__((sysv_abi));
+
+    launcher_entry_t launcher_main = (launcher_entry_t)entry;
     char* out;
     const char* result = launcher_main(&out);
 
