@@ -24,6 +24,3 @@
 
 local_sources := \
 	efi.cpp
-
-local_CFLAGS := -Wno-format
-local_CXXFLAGS := -Wno-format

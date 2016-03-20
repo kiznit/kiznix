@@ -283,10 +283,7 @@ void MemoryMap::Print()
             break;
         }
 
-        printf("    %08x%08x - %08x%08x : ",
-            (unsigned)(entry.start >> 32), (unsigned)(entry.start & 0xFFFFFFFF),
-            (unsigned)(entry.end >> 32), (unsigned)(entry.end & 0xFFFFFFFF));
-        puts(type);
+        printf("    %016llx - %016llx : %s\n", entry.start, entry.end, type);
     }
 }
 

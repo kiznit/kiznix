@@ -65,8 +65,8 @@ libgcc_path := $(shell $(CC) -print-file-name=libgcc.a)
 
 
 CPPFLAGS	:= $(addprefix -I,$(GLOBAL_INCLUDES)) $(addprefix -D,$(DEFINES))
-CFLAGS		:= $(CFLAGS) -fshort-wchar
-CXXFLAGS	:= $(CXXFLAGS) -fshort-wchar
+CFLAGS		:= $(CFLAGS) -fshort-wchar -Wno-format
+CXXFLAGS	:= $(CXXFLAGS) -fshort-wchar -Wno-format
 LDFLAGS		:= $(LDFLAGS) -shared -e $(EFI_ENTRY_POINT) --subsystem=10 --image-base=0x100000
 
 ifeq ($(TARGET_ARCH),ia32)
@@ -76,7 +76,6 @@ else ifeq ($(TARGET_ARCH),x86_64)
 CFLAGS		:= $(CFLAGS) -mno-mmx -mno-sse
 CXXFLAGS	:= $(CXXFLAGS) -mno-mmx -mno-sse
 endif
-
 
 
 

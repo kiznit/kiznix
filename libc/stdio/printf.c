@@ -69,10 +69,10 @@ int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
 {
     char convert[64];
     int f_left, f_sign, f_space, f_zero, f_alternate;
-    int f_long, f_short, f_ldouble;
+    int f_longlong, f_long, f_short, f_ldouble;
     int width, precision;
     int i, c, base, sign, signch, numdigits, numpr = 0, someflag;
-    unsigned long uval/*, uval2*/;
+    unsigned long long uval/*, uval2*/;
     const char *digits;
     char *string, *p = str;
     wchar_t *wstring;
@@ -195,7 +195,7 @@ int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
         precision = -1;
     }
 
-    f_long = f_short = f_ldouble = 0;
+    f_longlong = f_long = f_short = f_ldouble = 0;
 
     /*
      * Parse length modifier.
@@ -206,6 +206,12 @@ int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
     case 'L': f_ldouble = 1;    fmt++; break;
     }
 
+    if (f_long && *fmt == 'l')
+    {
+        f_longlong = 1;
+        ++fmt;
+    }
+
     sign = 1;
 
     /*
@@ -214,48 +220,53 @@ int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
     switch ( c = *fmt++ ) {
 
     case 'b':
-        uval = f_long ? va_arg( ap, long ) : va_arg( ap, int );
+        uval = f_longlong ? va_arg( ap, long long ) : f_long ? va_arg( ap, long ) : va_arg( ap, int );
         base = 2;
         digits = "01";
         goto Print_unsigned;
 
     case 'o':
-        uval = f_long ? va_arg( ap, long ) : va_arg( ap, int );
+        uval = f_longlong ? va_arg( ap, long long ) : f_long ? va_arg( ap, long ) : va_arg( ap, int );
         base = 8;
         digits = "012345678";
         goto Print_unsigned;
 
     case 'p':
-        precision = width = sizeof (long) * 2;
+        precision = width = sizeof (void*) * 2;
         f_alternate = 1;
         if (sizeof (void *) == sizeof (long))
-        f_long = 1;
+            f_long = 1;
+        else if (sizeof (void *) == sizeof (long long))
+            f_longlong = 1;
     case 'x':
-        uval = f_long ? va_arg( ap, long ) : va_arg( ap, int );
+        uval = f_longlong ? va_arg( ap, long long ) : f_long ? va_arg( ap, long ) : va_arg( ap, int );
         base = 16;
         digits = "0123456789abcdef";
         goto Print_unsigned;
 
     case 'X':
-        uval = f_long ? va_arg( ap, long ) : va_arg( ap, int );
+        uval = f_longlong ? va_arg( ap, long long ) : f_long ? va_arg( ap, long ) : va_arg( ap, int );
         base = 16;
         digits = "0123456789ABCDEF";
         goto Print_unsigned;
 
     case 'd':
     case 'i':
-        uval = f_long ? va_arg( ap, long ) : va_arg( ap, int );
+        uval = f_longlong ? va_arg( ap, long long ) : f_long ? va_arg( ap, long ) : va_arg( ap, int );
         base = 10;
         digits = "0123456789";
         goto Print_signed;
 
     case 'u':
-        uval = f_long ? va_arg( ap, long ) : va_arg( ap, int );
+        uval = f_longlong ? va_arg( ap, long long ) : f_long ? va_arg( ap, long ) : va_arg( ap, int );
         base = 10;
         digits = "0123456789";
 
     Print_unsigned:
         sign = 0;
+
+        if (!f_longlong)
+            uval = (unsigned long)uval;
 
     Print_signed:
         signch = 0;
@@ -265,20 +276,20 @@ int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
          * Check for sign character.
          */
         if ( sign ) {
-        if ( f_sign && (long) uval >= 0 ) {
+        if ( f_sign && (long long) uval >= 0 ) {
             signch = '+';
-        } else if ( f_space && (long) uval >= 0 ) {
+        } else if ( f_space && (long long) uval >= 0 ) {
             signch = ' ';
-        } else if ( (long) uval < 0 ) {
+        } else if ( (long long) uval < 0 ) {
             signch = '-';
-            uval = -( (long) uval );
+            uval = -( (long long) uval );
         }
         }
 
         /*
          * Create reversed number string.
          */
-        if (sizeof (long) >= 8 && base == 16)
+        if (sizeof (long long) >= 8 && base == 16)
         {
         numdigits = 0;
         do {
@@ -290,7 +301,7 @@ int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
         {
         numdigits = 0;
         do {
-            convert[numdigits++] =  digits[(unsigned int) uval % base];
+            convert[numdigits++] =  digits[(unsigned long long) uval % base];
             uval /= base;
         } while ( uval > 0 );
         }

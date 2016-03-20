@@ -211,7 +211,7 @@ static EFI_STATUS ExitBootServices(EFI_HANDLE hImage)
     // EFI_STATUS status = BS->ExitBootServices(hImage, mapKey);
     // if (EFI_ERROR(status))
     // {
-    //     printf("Failed to exit boot services: %08x\n", (int)status);
+    //     printf("Failed to exit boot services: %p\n", (void*)status);
     //     return status;
     // }
 
@@ -220,7 +220,7 @@ static EFI_STATUS ExitBootServices(EFI_HANDLE hImage)
         EFI_STATUS status = RT->SetVirtualAddressMap(descriptorCount * descriptorSize, descriptorSize, descriptorVersion, memoryMap);
         if (EFI_ERROR(status))
         {
-            printf("Failed to set virtual address map: %08x\n", (int)status);
+            printf("Failed to set virtual address map: %p\n", (void*)status);
             return status;
         }
     }
@@ -339,7 +339,7 @@ static int LoadElf32(const char* file, size_t size)
     // Allocate memory (we ignore alignment here and assume it is 4096 or less)
     char* memory = (char*) g_memoryMap.Alloc(MemoryZone_Normal, MemoryType_Unusable, elf.GetMemorySize());
 
-    printf("Memory allocated at %x\n", memory);
+    printf("Memory allocated at %p\n", memory);
 
 
     void* entry = elf.Load(memory);
