@@ -29,6 +29,9 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 /*
@@ -410,5 +413,10 @@ typedef struct
 
 } Elf64_Sym;
 
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

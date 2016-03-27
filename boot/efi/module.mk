@@ -23,4 +23,5 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 local_sources := \
-	efi.cpp
+	efi.cpp \
+	efiboot.cpp

@@ -55,7 +55,7 @@ GLOBAL_INCLUDES := \
 
 DEFINES := HAVE_USE_MS_ABI ARCH=$(TARGET_ARCH)
 
-MODULES := . ../common ../../libc ../../third_party/gnu-efi
+MODULES := . ../common ../../libc
 
 
 $(eval $(call load-modules,$(MODULES)))
