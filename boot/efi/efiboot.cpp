@@ -211,7 +211,7 @@ static efi::status_t LoadModule(efi::handle_t hDevice, const wchar_t* szPath, co
     // Motherboard/firmware info: Hero Hero Maximus VI (build 1603 2014/09/19).
     int pageCount = (fileSize + efi::PAGE_SIZE - 1) & ~efi::PAGE_MASK;
 
-    void* fileData = g_efiBootServices->AllocatePages(pageCount, 0xC0000000);
+    void* fileData = g_efiBootServices->AllocatePages(pageCount, 0xF0000000);
     if (!fileData)
         return EFI_OUT_OF_RESOURCES;
 
