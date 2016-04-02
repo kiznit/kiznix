@@ -180,17 +180,17 @@ void Elf32Loader::ApplyRelocations(char* memory)
             {
             case R_386_32:
                 // Symbol value + addend
-                *(uint32_t*)(memory + rel->r_offset) += symbol->st_value + memoryOffset;
+                *(uint32_t*)(memory + rel->r_offset - m_startAddress) += symbol->st_value + memoryOffset;
                 break;
 
             case R_386_GLOB_DAT:
                 // Symbol value
-                *(uint32_t*)(memory + rel->r_offset) = symbol->st_value + memoryOffset;
+                *(uint32_t*)(memory + rel->r_offset - m_startAddress) = symbol->st_value + memoryOffset;
                 break;
 
             case R_386_RELATIVE:
                 // Base address + addend
-                *(uint32_t*)(memory + rel->r_offset) += memoryOffset;
+                *(uint32_t*)(memory + rel->r_offset - m_startAddress) += memoryOffset;
                 break;
 
             default:
@@ -353,7 +353,7 @@ void Elf64Loader::ApplyRelocations(char* memory)
             {
             case R_X86_64_GLOB_DAT:
                 // Symbol value
-                *(uint64_t*)(memory + rel->r_offset) = symbol->st_value + memoryOffset;
+                *(uint64_t*)(memory + rel->r_offset - m_startAddress) = symbol->st_value + memoryOffset;
                 break;
 
             default:
