@@ -460,7 +460,7 @@ struct BootServices
 
 
     template<typename Protocol>
-    status_t CloseProtocol(handle_t handle, Protocol*& interface)
+    status_t CloseProtocol(handle_t handle, Protocol** interface)
     {
         status_t status;
 
@@ -470,7 +470,7 @@ struct BootServices
             status = pCloseProtocol(handle, &Protocol::guid, handle, NULL);
 
         if (!EFI_ERROR(status))
-            interface = NULL;
+            *interface = NULL;
 
         return status;
     }

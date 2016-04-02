@@ -41,6 +41,7 @@ static Modules g_modules;
 #define STRINGIZE_DELAY(x) #x
 #define STRINGIZE(x) STRINGIZE_DELAY(x)
 
+#define ARRAY_LENGTH(array)     (sizeof(array) / sizeof((array)[0]))
 
 
 // EFI Globals
@@ -178,21 +179,9 @@ static void InitConsole()
 
 
 
-static efi::status_t LoadModule(efi::handle_t hDevice, const wchar_t* szPath, const char* name)
+static efi::status_t LoadModule(efi::FileProtocol* root, const wchar_t* szPath, const char* name)
 {
     efi::status_t status;
-
-    // todo: use the LoadFileProtocol is we can't get a FileProtocol
-
-    efi::SimpleFileSystemProtocol* fs;
-    status = g_efiBootServices->OpenProtocol(hDevice, &fs);
-    if (EFI_ERROR(status))
-        return status;
-
-    efi::FileProtocol* root;
-    status = fs->OpenVolume(&root);
-    if (EFI_ERROR(status))
-        return status;
 
     efi::FileProtocol* file;
     status = root->Open(&file, szPath);
@@ -202,7 +191,10 @@ static efi::status_t LoadModule(efi::handle_t hDevice, const wchar_t* szPath, co
     efi::FileInfo info;
     status = file->GetInfo(&info);
     if (EFI_ERROR(status))
+    {
+        file->Close();
         return status;
+    }
 
     const uint64_t fileSize = info.fileSize;
 
@@ -213,7 +205,10 @@ static efi::status_t LoadModule(efi::handle_t hDevice, const wchar_t* szPath, co
 
     void* fileData = g_efiBootServices->AllocatePages(pageCount, 0xF0000000);
     if (!fileData)
+    {
+        file->Close();
         return EFI_OUT_OF_RESOURCES;
+    }
 
     size_t readSize = fileSize;
 
@@ -221,6 +216,7 @@ static efi::status_t LoadModule(efi::handle_t hDevice, const wchar_t* szPath, co
     if (EFI_ERROR(status) || readSize != fileSize)
     {
         printf("Failed to load module \"%s\"\n", name);
+        file->Close();
         return status;
     }
 
@@ -229,32 +225,56 @@ static efi::status_t LoadModule(efi::handle_t hDevice, const wchar_t* szPath, co
 
     g_modules.AddModule(name, start, end);
 
-    file->Close();
-    root->Close();
-    g_efiBootServices->CloseProtocol(hDevice, fs);
-
     return EFI_SUCCESS;
 }
 
+
+struct ModuleEntry
+{
+    const wchar_t* path;
+    const char* name;
+};
+
+static const ModuleEntry s_modules[] =
+{
+    { L"\\kiznix\\launcher", "/kiznix/launcher" },
+#if defined(__i386__) || defined(__x86_64__)
+    { L"\\kiznix\\kernel_ia32", "/kiznix/kernel_ia32" },
+    { L"\\kiznix\\kernel_x86_64", "/kiznix/kernel_x86_64" },
+#endif
+};
 
 
 static efi::status_t LoadModules(efi::handle_t hDevice)
 {
     efi::status_t status;
 
-    status = LoadModule(hDevice, L"\\kiznix\\launcher", "/kiznix/launcher");
+    efi::SimpleFileSystemProtocol* fs;
+    status = g_efiBootServices->OpenProtocol(hDevice, &fs);
     if (EFI_ERROR(status))
         return status;
 
-#if defined(__i386__) || defined(__x86_64__)
-    status = LoadModule(hDevice, L"\\kiznix\\kernel_ia32", "/kiznix/kernel_ia32");
+    efi::FileProtocol* root;
+    status = fs->OpenVolume(&root);
     if (EFI_ERROR(status))
+    {
+        g_efiBootServices->CloseProtocol(hDevice, &fs);
         return status;
+    }
 
-    status = LoadModule(hDevice, L"\\kiznix\\kernel_x86_64", "/kiznix/kernel_x86_64");
-    if (EFI_ERROR(status))
-        return status;
-#endif
+    for (size_t i = 0; i != ARRAY_LENGTH(s_modules); ++i)
+    {
+        status = LoadModule(root, s_modules[i].path, s_modules[i].name);
+        if (EFI_ERROR(status))
+        {
+            root->Close();
+            g_efiBootServices->CloseProtocol(hDevice, &fs);
+            return status;
+        }
+    }
+
+    root->Close();
+    g_efiBootServices->CloseProtocol(hDevice, &fs);
 
     return EFI_SUCCESS;
 }
@@ -512,7 +532,7 @@ static efi::status_t Boot()
         return status;
     }
 
-    g_efiBootServices->CloseProtocol(g_efiImage, image);
+    g_efiBootServices->CloseProtocol(g_efiImage, &image);
 
 
     status = BuildMemoryMap();
