@@ -22,143 +22,75 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-ROOTDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-
-SRCDIR ?= $(ROOTDIR)
-BUILDDIR ?= $(CURDIR)/build
-BINDIR ?= $(CURDIR)/bin
-
-QEMUFLAGS := -m 8G
-
+ROOT_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+BUILD_DIR ?= build
+BUILD_DIR_X86 ?= $(BUILD_DIR)/x86
+BUILD_DIR_X86_PAE ?= $(BUILD_DIR)/x86_pae
+BUILD_DIR_X86_64 ?= $(BUILD_DIR)/x86_64
+BUILD_DIR_ISO ?= $(BUILD_DIR)/iso
 
 .PHONY: all
-all: bios-image efi-image
+all: iso
 
 
 .PHONY: clean
 clean:
-	$(RM) -r $(BUILDDIR)
-	$(RM) -r $(BINDIR)
+	rm -rf $(BUILD_DIR)
 
 
-###############################################################################
-# Boot loaders
-###############################################################################
+.PHONY: kernel_x86
+kernel_x86: $(BUILD_DIR_X86)/Makefile
+	$(MAKE) -s -C $(BUILD_DIR_X86)
 
-.PHONY: efi_ia32
-efi_ia32:
-	$(MAKE) TARGET_ARCH=ia32 BUILDDIR=$(BUILDDIR)/ia32/efi -C $(SRCDIR)/boot/efi
-
-.PHONY: efi_x86_64
-efi_x86_64:
-	$(MAKE) TARGET_ARCH=x86_64 BUILDDIR=$(BUILDDIR)/x86_64/efi -C $(SRCDIR)/boot/efi
-
-.PHONY: multiboot_ia32
-multiboot_ia32:
-	$(MAKE) TARGET_ARCH=ia32 BUILDDIR=$(BUILDDIR)/ia32/multiboot -C $(SRCDIR)/boot/multiboot
-
-
-###############################################################################
-# Launcher
-###############################################################################
-
-.PHONE: launcher_ia32
-launcher_ia32:
-	$(MAKE) TARGET_ARCH=ia32 BUILDDIR=$(BUILDDIR)/ia32/launcher -C $(SRCDIR)/boot/launcher
-
-
-###############################################################################
-# Kernels
-###############################################################################
-
-.PHONY: kernel_ia32
-kernel_ia32:
-	$(MAKE) TARGET_ARCH=ia32 BUILDDIR=$(BUILDDIR)/ia32/kernel -C $(SRCDIR)/kernel
+.PHONY: kernel_x86_pae
+kernel_x86_pae: $(BUILD_DIR_X86_PAE)/Makefile
+	$(MAKE) -s -C $(BUILD_DIR_X86_PAE)
 
 .PHONY: kernel_x86_64
-kernel_x86_64:
-	$(MAKE) TARGET_ARCH=x86_64 BUILDDIR=$(BUILDDIR)/x86_64/kernel -C $(SRCDIR)/kernel
+kernel_x86_64: $(BUILD_DIR_X86_64)/Makefile
+	$(MAKE) -s -C $(BUILD_DIR_X86_64)
 
 
-###############################################################################
-# BIOS image
-###############################################################################
+$(BUILD_DIR_X86)/Makefile:
+	mkdir -p $(BUILD_DIR_X86)
+	cd $(BUILD_DIR_X86); cmake -DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/cmake/toolchain-x86.cmake $(ROOT_DIR)
 
-.PHONY: bios-image
-bios-image: multiboot_ia32 launcher_ia32 kernel_ia32 kernel_x86_64
-	$(RM) -r $(BUILDDIR)/bios-image
-	mkdir -p $(BUILDDIR)/bios-image/boot/grub
-	cp $(BUILDDIR)/ia32/multiboot/bin/multiboot $(BUILDDIR)/bios-image/boot/kiznix_multiboot
-	cp $(SRCDIR)/iso/grub.cfg $(BUILDDIR)/bios-image/boot/grub/grub.cfg
-	mkdir -p $(BUILDDIR)/bios-image/kiznix
-	cp $(BUILDDIR)/ia32/launcher/bin/launcher $(BUILDDIR)/bios-image/kiznix/launcher
-	cp $(BUILDDIR)/ia32/kernel/bin/kernel $(BUILDDIR)/bios-image/kiznix/kernel_ia32
-	cp $(BUILDDIR)/x86_64/kernel/bin/kernel $(BUILDDIR)/bios-image/kiznix/kernel_x86_64
-	mkdir -p $(BINDIR)
-	grub-mkrescue -o $(BINDIR)/kiznix-bios.iso $(BUILDDIR)/bios-image
+$(BUILD_DIR_X86_PAE)/Makefile:
+	mkdir -p $(BUILD_DIR_X86_PAE)
+	cd $(BUILD_DIR_X86_PAE); cmake -DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/cmake/toolchain-x86.cmake -DKIZNIX_PAE=true $(ROOT_DIR)
 
-.PHONY: multiboot
-multiboot: $(BUILDDIR)/x86/multiboot/Makefile
-	$(MAKE) -C $(BUILDDIR)/x86/multiboot
-
-$(BUILDDIR)/x86/multiboot/Makefile:
-	mkdir -p $(dir $@)
-	cd $(dir $@); cmake -DCMAKE_TOOLCHAIN_FILE=$(ROOTDIR)/cmake/toolchain-x86-kiznix.cmake $(SRCDIR)/boot/multiboot
+$(BUILD_DIR_X86_64)/Makefile:
+	mkdir -p $(BUILD_DIR_X86_64)
+	cd $(BUILD_DIR_X86_64); cmake -DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/cmake/toolchain-x86_64.cmake $(ROOT_DIR)
 
 
-
-###############################################################################
-# EFI image
-###############################################################################
-
-.PHONY: efi-image
-efi-image: efi_ia32 efi_x86_64 launcher_ia32 kernel_ia32 kernel_x86_64
-	$(RM) -r $(BUILDDIR)/efi-image
-	mkdir -p $(BUILDDIR)/efi-image/efi/boot
-	cp $(BUILDDIR)/ia32/efi/bin/bootia32.efi $(BUILDDIR)/efi-image/efi/boot
-	cp $(BUILDDIR)/x86_64/efi/bin/bootx64.efi $(BUILDDIR)/efi-image/efi/boot
-	mkdir -p $(BUILDDIR)/efi-image/kiznix
-	cp $(BUILDDIR)/ia32/efi/bin/bootia32.efi $(BUILDDIR)/efi-image/kiznix
-	cp $(BUILDDIR)/x86_64/efi/bin/bootx64.efi $(BUILDDIR)/efi-image/kiznix
-	cp $(BUILDDIR)/ia32/launcher/bin/launcher $(BUILDDIR)/efi-image/kiznix/launcher
-	cp $(BUILDDIR)/ia32/kernel/bin/kernel $(BUILDDIR)/efi-image/kiznix/kernel_ia32
-	cp $(BUILDDIR)/x86_64/kernel/bin/kernel $(BUILDDIR)/efi-image/kiznix/kernel_x86_64
-	mkdir -p $(BINDIR)
-	dd if=/dev/zero of=$(BINDIR)/kiznix-uefi.img bs=1M count=33
-	mkfs.vfat $(BINDIR)/kiznix-uefi.img -F32
-	mcopy -s -i $(BINDIR)/kiznix-uefi.img $(BUILDDIR)/efi-image/* ::
+.PHONY: kernels
+kernels: kernel_x86 kernel_x86_pae kernel_x86_64
 
 
+.PHONY: iso
+iso: kernels $(BUILD_DIR_ISO)/kiznix.iso
 
-###############################################################################
-# Run targets
-###############################################################################
 
-.PHONY: run-bios-32
-run-bios-32: bios-image
-	qemu-system-i386 $(QEMUFLAGS) -cdrom $(BINDIR)/kiznix-bios.iso
+$(BUILD_DIR_ISO)/kiznix.iso: $(ROOT_DIR)/iso/grub.cfg $(BUILD_DIR_X86)/src/kernel/kernel $(BUILD_DIR_X86_PAE)/src/kernel/kernel $(BUILD_DIR_X86_64)/src/kernel/kernel
+	rm -rf $(BUILD_DIR_ISO)
+	mkdir -p $(BUILD_DIR_ISO)/layout/boot/grub
+	cp $(BUILD_DIR_X86)/src/kernel/kernel $(BUILD_DIR_ISO)/layout/boot/kiznix-x86.elf
+	cp $(BUILD_DIR_X86_PAE)/src/kernel/kernel $(BUILD_DIR_ISO)/layout/boot/kiznix-x86-pae.elf
+	x86_64-elf-objcopy $(BUILD_DIR_X86_64)/src/kernel/kernel -O elf32-i386 "$(BUILD_DIR_ISO)/layout/boot/kiznix-x86_64.elf"
+	cp $(ROOT_DIR)/iso/grub.cfg $(BUILD_DIR_ISO)/layout/boot/grub/grub.cfg
+	grub-mkrescue -o $(BUILD_DIR_ISO)/kiznix.iso $(BUILD_DIR_ISO)/layout
 
-.PHONY: run-bios-64
-run-bios-64: bios-image
-	qemu-system-x86_64 $(QEMUFLAGS) -cdrom $(BINDIR)/kiznix-bios.iso
-
-.PHONY: run-efi-32
-run-efi-32: efi-image
-	qemu-system-i386 $(QEMUFLAGS) -bios bios/OVMF-ia32.fd $(BINDIR)/kiznix-uefi.img
-
-.PHONY: run-efi-64
-run-efi-64: efi-image
-	qemu-system-x86_64 $(QEMUFLAGS) -bios bios/OVMF-x64.fd $(BINDIR)/kiznix-uefi.img
 
 .PHONY: run-bochs
-run-bochs: bios-image
+run-bochs: iso
 	bochs -q
 
-.PHONY: run-bios
-run-bios: run-bios-64
 
-.PHONY: run-efi
-run-efi: run-efi-64
+.PHONY: run-qemu
+run-qemu: iso
+	qemu-system-x86_64 -m 8G -vga std -cdrom $(BUILD_DIR_ISO)/kiznix.iso
+
 
 .PHONY: run
-run: run-bios
+run: run-qemu

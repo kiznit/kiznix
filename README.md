@@ -1,7 +1,7 @@
 Kiznix
 ======
 
-Thierry's own OS.
+Thierry's own OS. Currently supports three targets: x86, x86 with PAE and x86_64.
 
 
 License
@@ -22,8 +22,8 @@ requirements):
 
     1) binutils 2.24.90 (i686-elf and x86_64-elf tools)
     2) gcc 4.8.3 (i686-elf and x86_64-elf cross-compilers)
-    3) MinGW-w64 (i686-w64-mingw32 and x86_64-w64-mingw32 cross-compilers)
-    4) NASM 2.10.09
+    3) NASM 2.10.09
+    4) CMake 2.8.12
     5) GNU Make 3.81
 
 If you are unsure how to produce the required binutils and gcc cross-compilers,
@@ -43,6 +43,6 @@ Makefile targets
 
     - make            --> build all kernel variants
     - make clean      --> cleanup
-    - make run-bios   --> run the kernel under qemu (BIOS)
-    - make run-efi    --> run the kernel under qemu (EFI)
-    - make run-bochs  --> run the kernel under bochs (BIOS)
+    - make iso        --> build an iso image with all kernel variants on it
+    - make run-bochs  --> run the iso image under bochs
+    - make run-qemu   --> run the iso image under qemu
